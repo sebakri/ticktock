@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'time_block.dart';
 
 class Task {
+  int? id;
   String title;
   String description;
   Color color;
@@ -9,6 +10,7 @@ class Task {
   bool isExpanded;
 
   Task({
+    this.id,
     required this.title,
     this.description = '',
     required this.color,
@@ -20,4 +22,23 @@ class Task {
 
   DateTime get firstStartTime => blocks.isEmpty ? DateTime.now() : blocks.map((b) => b.startTime).reduce((a, b) => a.isBefore(b) ? a : b);
   DateTime get lastEndTime => blocks.isEmpty ? DateTime.now() : blocks.map((b) => b.endTime).reduce((a, b) => a.isAfter(b) ? a : b);
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'title': title,
+      'description': description,
+      'color': color.value,
+    };
+  }
+
+  factory Task.fromMap(Map<String, dynamic> map, List<TimeBlock> blocks) {
+    return Task(
+      id: map['id'],
+      title: map['title'],
+      description: map['description'],
+      color: Color(map['color']),
+      blocks: blocks,
+    );
+  }
 }

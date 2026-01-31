@@ -6,6 +6,7 @@ import 'screens/home_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
+  await windowManager.setPreventClose(true);
 
   WindowOptions windowOptions = const WindowOptions(
     size: Size(1000, 800),

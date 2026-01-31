@@ -10,6 +10,7 @@ import '../widgets/home/daily_log_header.dart';
 import '../widgets/home/day_timeline.dart';
 import '../widgets/home/quick_input.dart';
 import '../widgets/home/task_item.dart';
+import '../services/database_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,55 +19,14 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WindowListener {
   final TextEditingController _taskController = TextEditingController();
   bool _isTracking = false;
   DateTime? _trackingStartTime;
   Timer? _ticker;
-  DateTime _selectedDate = DateTime(2023, 10, 24);
-
-  final List<Task> _tasks = [
-    Task(
-      title: 'UI Design for Dashboard',
-      description: 'Wireframing new layout concepts',
-      color: const Color(0xFF6366F1),
-      isExpanded: true,
-      blocks: [
-        TimeBlock(
-          name: 'Morning Session',
-          startTime: DateTime(2023, 10, 24, 9, 0),
-          endTime: DateTime(2023, 10, 24, 10, 30),
-        ),
-        TimeBlock(
-          name: 'Afternoon Iteration',
-          startTime: DateTime(2023, 10, 24, 14, 0),
-          endTime: DateTime(2023, 10, 24, 15, 30),
-        ),
-      ],
-    ),
-    Task(
-      title: 'Reading & Research',
-      description: 'Design systems best practices',
-      color: const Color(0xFF06B6D4),
-      blocks: [
-        TimeBlock(
-          startTime: DateTime(2023, 10, 24, 13, 0),
-          endTime: DateTime(2023, 10, 24, 14, 0),
-        ),
-      ],
-    ),
-    Task(
-      title: 'Personal Project Coding',
-      description: 'Implementing core logic',
-      color: const Color(0xFFF59E0B),
-      blocks: [
-        TimeBlock(
-          startTime: DateTime(2023, 10, 24, 14, 30),
-          endTime: DateTime(2023, 10, 24, 17, 0),
-        ),
-      ],
-    ),
-  ];
+  DateTime _selectedDate = DateTime.now();
+  List<Task> _tasks = [];
+  bool _isLoading = true;
 
   static const List<Color> _palette = [
     Color(0xFF6366F1), // Indigo
@@ -84,76 +44,104 @@ class _HomeScreenState extends State<HomeScreen> {
     Color(0xFFEF4444), // Red
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    windowManager.addListener(this);
+    _selectedDate = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    _refreshTasks();
+  }
+
+  @override
+  void dispose() {
+    windowManager.removeListener(this);
+    _ticker?.cancel();
+    _taskController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void onWindowClose() async {
+    await windowManager.hide();
+  }
+
+  Future _refreshTasks() async {
+    setState(() => _isLoading = true);
+    _tasks = await DatabaseService.instance.getTasks();
+    setState(() => _isLoading = false);
+  }
+
   Color _getNextColor() {
     return _palette[_tasks.length % _palette.length];
   }
 
-  void _toggleTracking() {
+  void _toggleTracking() async {
     final title = _taskController.text.trim();
     if (title.isEmpty) return;
 
-    setState(() {
-      if (_isTracking) {
-        final existingTaskIndex = _tasks.indexWhere((t) => t.title == title);
-        final endTime = DateTime.now();
+    if (_isTracking) {
+      final endTime = DateTime.now();
+      final existingTaskIndex = _tasks.indexWhere((t) => t.title == title);
 
-        if (existingTaskIndex != -1) {
-          _tasks[existingTaskIndex].blocks.add(
-            TimeBlock(startTime: _trackingStartTime!, endTime: endTime),
-          );
-        } else {
-          _tasks.insert(
-            0,
-            Task(
-              title: title,
-              color: _getNextColor(),
-              blocks: [
-                TimeBlock(startTime: _trackingStartTime!, endTime: endTime),
-              ],
-            ),
-          );
-        }
+      if (existingTaskIndex != -1) {
+        final task = _tasks[existingTaskIndex];
+        final block = TimeBlock(
+          taskId: task.id,
+          startTime: _trackingStartTime!,
+          endTime: endTime,
+        );
+        await DatabaseService.instance.createTimeBlock(block);
+      } else {
+        final newTask = Task(
+          title: title,
+          color: _getNextColor(),
+        );
+        final taskId = await DatabaseService.instance.createTask(newTask);
+        final block = TimeBlock(
+          taskId: taskId,
+          startTime: _trackingStartTime!,
+          endTime: endTime,
+        );
+        await DatabaseService.instance.createTimeBlock(block);
+      }
+      
+      setState(() {
         _isTracking = false;
         _trackingStartTime = null;
         _taskController.clear();
         _ticker?.cancel();
-      } else {
+      });
+      _refreshTasks();
+    } else {
+      setState(() {
         _isTracking = true;
         _trackingStartTime = DateTime.now();
         final now = DateTime.now();
-        if (_selectedDate.year != now.year ||
-            _selectedDate.month != now.month ||
-            _selectedDate.day != now.day) {
+        if (_selectedDate.year != now.year || _selectedDate.month != now.month || _selectedDate.day != now.day) {
           _selectedDate = DateTime(now.year, now.month, now.day);
         }
         _ticker = Timer.periodic(const Duration(seconds: 1), (timer) {
           setState(() {});
         });
-      }
-    });
+      });
+    }
   }
 
   void _editTask(Task task) {
-    final usedColors = _tasks
-        .where((t) => t != task)
-        .map((t) => t.color)
-        .toSet();
-
-    final availablePalette = _palette
-        .where((color) => !usedColors.contains(color) || color == task.color)
-        .toList();
+    final usedColors = _tasks.where((t) => t != task).map((t) => t.color).toSet();
+    final availablePalette = _palette.where((color) => !usedColors.contains(color) || color == task.color).toList();
 
     showDialog(
       context: context,
       builder: (context) => EditTaskDialog(
         task: task,
         palette: availablePalette,
-        onSave: (title, description, color) {
-          setState(() {
-            task.title = title;
-            task.description = description;
-            task.color = color;
-          });
+        onSave: (title, description, color) async {
+          task.title = title;
+          task.description = description;
+          task.color = color;
+          await DatabaseService.instance.updateTask(task);
+          _refreshTasks();
         },
       ),
     );
@@ -164,34 +152,37 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (context) => EditSessionDialog(
         block: block,
-        onSave: (newName) {
-          setState(() {
-            block.name = newName;
-          });
+        onSave: (newName) async {
+          block.name = newName;
+          await DatabaseService.instance.updateTimeBlock(block);
+          _refreshTasks();
         },
       ),
     );
   }
 
-  void _deleteTimeBlock(Task task, int blockIndex) {
-    setState(() {
-      task.blocks.removeAt(blockIndex);
-      if (task.blocks.isEmpty) {
-        _tasks.remove(task);
+  void _deleteTimeBlock(Task task, int blockIndex) async {
+    final block = task.blocks[blockIndex];
+    if (block.id != null) {
+      await DatabaseService.instance.deleteTimeBlock(block.id!);
+      if (task.blocks.length == 1) {
+        await DatabaseService.instance.deleteTask(task.id!);
       }
-    });
+      _refreshTasks();
+    }
   }
 
-  @override
-  void dispose() {
-    _ticker?.cancel();
-    _taskController.dispose();
-    super.dispose();
+  void _deleteTask(Task task) async {
+    if (task.id != null) {
+      await DatabaseService.instance.deleteTask(task.id!);
+      _refreshTasks();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF0F172A),
       body: Column(
         children: [
           DragToMoveArea(
@@ -209,103 +200,96 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-              child: CustomScrollView(
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 8),
-                        DailyLogHeader(
-                          selectedDate: _selectedDate,
-                          onPrevDay: () {
-                            setState(() {
-                              _selectedDate = _selectedDate.subtract(
-                                const Duration(days: 1),
-                              );
-                            });
-                          },
-                          onNextDay: () {
-                            setState(() {
-                              _selectedDate = _selectedDate.add(
-                                const Duration(days: 1),
-                              );
-                            });
-                          },
-                          onToday: () {
-                            setState(() {
-                              final now = DateTime.now();
-                              _selectedDate = DateTime(
-                                now.year,
-                                now.month,
-                                now.day,
-                              );
-                            });
-                          },
-                          onJumpToDate: () async {
-                            final DateTime? picked = await showDatePicker(
-                              context: context,
-                              initialDate: _selectedDate,
-                              firstDate: DateTime(2020),
-                              lastDate: DateTime(2101),
-                            );
-                            if (picked != null && picked != _selectedDate) {
+            child: _isLoading 
+              ? const Center(child: CircularProgressIndicator())
+              : Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                child: CustomScrollView(
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 8),
+                          DailyLogHeader(
+                            selectedDate: _selectedDate,
+                            onPrevDay: () {
                               setState(() {
-                                _selectedDate = picked;
+                                _selectedDate = _selectedDate.subtract(const Duration(days: 1));
                               });
-                            }
-                          },
-                        ),
-                        const SizedBox(height: 24),
-                        DayTimeline(
-                          selectedDate: _selectedDate,
-                          tasks: _tasks,
-                          isTracking: _isTracking,
-                          trackingStartTime: _trackingStartTime,
-                          trackingTaskTitle: _taskController.text.trim(),
-                          palette: _palette,
-                        ),
-                        const SizedBox(height: 24),
-                        QuickInput(
-                          controller: _taskController,
-                          isTracking: _isTracking,
-                          onToggleTracking: _toggleTracking,
-                        ),
-                        const SizedBox(height: 24),
-                        _buildTaskListHeader(),
-                        const SizedBox(height: 12),
-                      ],
-                    ),
-                  ),
-                  SliverList(
-                    delegate: SliverChildBuilderDelegate((context, index) {
-                      final task = _tasks[index];
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: TaskItem(
-                          task: task,
-                          onToggleExpand: () => setState(
-                            () => task.isExpanded = !task.isExpanded,
+                            },
+                            onNextDay: () {
+                              setState(() {
+                                _selectedDate = _selectedDate.add(const Duration(days: 1));
+                              });
+                            },
+                            onToday: () {
+                              setState(() {
+                                final now = DateTime.now();
+                                _selectedDate = DateTime(now.year, now.month, now.day);
+                              });
+                            },
+                            onJumpToDate: () async {
+                              final DateTime? picked = await showDatePicker(
+                                context: context,
+                                initialDate: _selectedDate,
+                                firstDate: DateTime(2020),
+                                lastDate: DateTime(2101),
+                              );
+                              if (picked != null && picked != _selectedDate) {
+                                setState(() {
+                                  _selectedDate = picked;
+                                });
+                              }
+                            },
                           ),
-                          onStartTracking: () {
-                            _taskController.text = task.title;
-                            _toggleTracking();
-                          },
-                          onEdit: () => _editTask(task),
-                          onDelete: () =>
-                              setState(() => _tasks.removeAt(index)),
-                          onEditBlock: (block) => _editTimeBlock(task, block),
-                          onDeleteBlock: (blockIndex) =>
-                              _deleteTimeBlock(task, blockIndex),
-                        ),
-                      );
-                    }, childCount: _tasks.length),
-                  ),
-                ],
+                          const SizedBox(height: 24),
+                          DayTimeline(
+                            selectedDate: _selectedDate,
+                            tasks: _tasks,
+                            isTracking: _isTracking,
+                            trackingStartTime: _trackingStartTime,
+                            trackingTaskTitle: _taskController.text.trim(),
+                            palette: _palette,
+                          ),
+                          const SizedBox(height: 24),
+                          QuickInput(
+                            controller: _taskController,
+                            isTracking: _isTracking,
+                            onToggleTracking: _toggleTracking,
+                          ),
+                          const SizedBox(height: 24),
+                          _buildTaskListHeader(),
+                          const SizedBox(height: 12),
+                        ],
+                      ),
+                    ),
+                    SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final task = _tasks[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: TaskItem(
+                              task: task,
+                              onToggleExpand: () => setState(() => task.isExpanded = !task.isExpanded),
+                              onStartTracking: () {
+                                _taskController.text = task.title;
+                                _toggleTracking();
+                              },
+                              onEdit: () => _editTask(task),
+                              onDelete: () => _deleteTask(task),
+                              onEditBlock: (block) => _editTimeBlock(task, block),
+                              onDeleteBlock: (blockIndex) => _deleteTimeBlock(task, blockIndex),
+                            ),
+                          );
+                        },
+                        childCount: _tasks.length,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
           ),
         ],
       ),
@@ -313,12 +297,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildTaskListHeader() {
-    final totalDuration = _tasks.fold(
-      Duration.zero,
-      (prev, task) => prev + task.totalDuration,
-    );
-    final totalTimeStr =
-        '${totalDuration.inHours}h ${totalDuration.inMinutes % 60}m total';
+    final totalDuration = _tasks.fold(Duration.zero, (prev, task) => prev + task.totalDuration);
+    final totalTimeStr = '${totalDuration.inHours}h ${totalDuration.inMinutes % 60}m total';
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -327,7 +307,10 @@ class _HomeScreenState extends State<HomeScreen> {
           'Tasks',
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
-        Text(totalTimeStr, style: TextStyle(color: Colors.grey[400])),
+        Text(
+          totalTimeStr,
+          style: TextStyle(color: Colors.grey[400]),
+        ),
       ],
     );
   }

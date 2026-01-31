@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { margin: 0; background: transparent; overflow: hidden; width: 1024px; height: 1024px; }
+    canvas { display: block; background: transparent; }
+  </style>
+</head>
+<body>
+  <canvas id="app-icon" width="1024" height="1024"></canvas>
+  <canvas id="tray-icon" width="32" height="32" style="display:none"></canvas>
+  <script>
+    function drawAppIcon() {
+      const canvas = document.getElementById('app-icon');
+      const ctx = canvas.getContext('2d');
+      const size = 1024;
+      const center = size / 2;
+
+      // Clear with transparency
+      ctx.clearRect(0, 0, size, size);
+
+      // Background Circle
+      const gradient = ctx.createLinearGradient(0, 0, size, size);
+      gradient.addColorStop(0, '#1E293B');
+      gradient.addColorStop(1, '#0F172A');
+      
+      ctx.beginPath();
+      ctx.arc(center, center, center * 0.9, 0, Math.PI * 2);
+      ctx.fillStyle = gradient;
+      ctx.fill();
+
+      // Subtle Inner Glow
+      ctx.beginPath();
+      ctx.arc(center, center, center * 0.85, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.lineWidth = 10;
+      ctx.stroke();
+
+      // Clock Face (Ticks)
+      ctx.strokeStyle = '#4F46E5';
+      ctx.lineWidth = 20;
+      ctx.lineCap = 'round';
+      for (let i = 0; i < 12; i++) {
+        ctx.save();
+        ctx.translate(center, center);
+        ctx.rotate((i * 30) * Math.PI / 180);
+        ctx.beginPath();
+        ctx.moveTo(0, -center * 0.7);
+        ctx.lineTo(0, -center * 0.6);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Stylized "Tick"
+      ctx.save();
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+      ctx.shadowBlur = 30;
+      ctx.shadowOffsetY = 20;
+      ctx.beginPath();
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.lineWidth = 60;
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.moveTo(center - 150, center + 100);
+      ctx.lineTo(center - 50, center + 200);
+      ctx.lineTo(center + 250, center - 150);
+      ctx.stroke();
+      ctx.restore();
+
+      // Center point
+      ctx.beginPath();
+      ctx.arc(center, center, 20, 0, Math.PI * 2);
+      ctx.fillStyle = '#818CF8';
+      ctx.fill();
+    }
+
+    function drawTrayIcon() {
+      const canvas = document.getElementById('tray-icon');
+      const ctx = canvas.getContext('2d');
+      const size = 32;
+      const center = size / 2;
+
+      ctx.clearRect(0, 0, size, size);
+      
+      // We draw the tick in white. macOS template icons will handle the rest.
+      ctx.beginPath();
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#FFFFFF';
+      
+      // Scaled down tick
+      ctx.moveTo(8, 18);
+      ctx.lineTo(14, 24);
+      ctx.lineTo(24, 10);
+      ctx.stroke();
+    }
+
+    drawAppIcon();
+    drawTrayIcon();
+  </script>
+</body>
+</html>
