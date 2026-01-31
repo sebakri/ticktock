@@ -10,6 +10,11 @@ class MainFlutterWindow: NSWindow {
 
     RegisterGeneratedPlugins(registry: flutterViewController)
 
+    self.titleVisibility = .hidden
+    self.titlebarAppearsTransparent = true
+    self.isMovableByWindowBackground = true
+    self.styleMask.insert(.fullSizeContentView)
+
     super.awakeFromNib()
   }
 }
