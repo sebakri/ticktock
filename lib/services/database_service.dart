@@ -132,6 +132,16 @@ class DatabaseService {
     return tasks;
   }
 
+  Future<Set<DateTime>> getSessionDates() async {
+    final db = await instance.database;
+    final result = await db.query('time_blocks', columns: ['start_time']);
+    
+    return result.map((row) {
+      final date = DateTime.parse(row['start_time'] as String);
+      return DateTime(date.year, date.month, date.day);
+    }).toSet();
+  }
+
   Future<int> updateTask(Task task) async {
     final db = await instance.database;
     return await db.update(

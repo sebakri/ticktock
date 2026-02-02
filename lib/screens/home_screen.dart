@@ -311,11 +311,30 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                                   });
                                 },
                                 onJumpToDate: () async {
+                                  final dates = await DatabaseService.instance
+                                      .getSessionDates();
+                                  final now = DateTime.now();
+                                  final today =
+                                      DateTime(now.year, now.month, now.day);
+                                  final selected = DateTime(_selectedDate.year,
+                                      _selectedDate.month, _selectedDate.day);
+
+                                  // Ensure initial date and today are selectable
+                                  dates.add(today);
+                                  dates.add(selected);
+
+                                  if (!mounted) return;
+
                                   final DateTime? picked = await showDatePicker(
                                     context: context,
                                     initialDate: _selectedDate,
                                     firstDate: DateTime(2020),
                                     lastDate: DateTime(2101),
+                                    selectableDayPredicate: (date) {
+                                      final normalized = DateTime(
+                                          date.year, date.month, date.day);
+                                      return dates.contains(normalized);
+                                    },
                                   );
                                   if (picked != null &&
                                       picked != _selectedDate) {
