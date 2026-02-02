@@ -21,12 +21,14 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with WindowListener {
   final TextEditingController _taskController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
   bool _isTracking = false;
   DateTime? _trackingStartTime;
   Timer? _ticker;
   DateTime _selectedDate = DateTime.now();
   List<Task> _tasks = [];
   bool _isLoading = true;
+  String _searchQuery = '';
 
   static const List<Color> _palette = [
     Color(0xFF6366F1), // Indigo
@@ -55,6 +57,11 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
     );
     _refreshTasks();
     _loadTrackingState();
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text.trim().toLowerCase();
+      });
+    });
   }
 
   Future<void> _loadTrackingState() async {
@@ -77,6 +84,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
     windowManager.removeListener(this);
     _ticker?.cancel();
     _taskController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -277,126 +285,148 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                 ? const Center(child: CircularProgressIndicator())
                 : Padding(
                     padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                    child: CustomScrollView(
-                      slivers: [
-                        SliverToBoxAdapter(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(height: 8),
-                              DailyLogHeader(
-                                selectedDate: _selectedDate,
-                                onPrevDay: () {
-                                  setState(() {
-                                    _selectedDate = _selectedDate.subtract(
-                                      const Duration(days: 1),
-                                    );
-                                  });
-                                },
-                                onNextDay: () {
-                                  setState(() {
-                                    _selectedDate = _selectedDate.add(
-                                      const Duration(days: 1),
-                                    );
-                                  });
-                                },
-                                onToday: () {
-                                  setState(() {
-                                    final now = DateTime.now();
-                                    _selectedDate = DateTime(
-                                      now.year,
-                                      now.month,
-                                      now.day,
-                                    );
-                                  });
-                                },
-                                onJumpToDate: () async {
-                                  final dates = await DatabaseService.instance
-                                      .getSessionDates();
-                                  final now = DateTime.now();
-                                  final today =
-                                      DateTime(now.year, now.month, now.day);
-                                  final selected = DateTime(_selectedDate.year,
-                                      _selectedDate.month, _selectedDate.day);
+                    child: Builder(builder: (context) {
+                      final filteredTasks = _tasks.where((task) {
+                        if (_searchQuery.isEmpty) return true;
+                        final title = task.title.toLowerCase();
+                        final desc = task.description.toLowerCase();
+                        if (title.contains(_searchQuery) ||
+                            desc.contains(_searchQuery)) return true;
+                        int charIndex = 0;
+                        for (int i = 0;
+                            i < title.length && charIndex < _searchQuery.length;
+                            i++) {
+                          if (title[i] == _searchQuery[charIndex]) charIndex++;
+                        }
+                        return charIndex == _searchQuery.length;
+                      }).toList();
 
-                                  // Ensure initial date and today are selectable
-                                  dates.add(today);
-                                  dates.add(selected);
-
-                                  if (!mounted) return;
-
-                                  final DateTime? picked = await showDatePicker(
-                                    context: context,
-                                    initialDate: _selectedDate,
-                                    firstDate: DateTime(2020),
-                                    lastDate: DateTime(2101),
-                                    selectableDayPredicate: (date) {
-                                      final normalized = DateTime(
-                                          date.year, date.month, date.day);
-                                      return dates.contains(normalized);
-                                    },
-                                  );
-                                  if (picked != null &&
-                                      picked != _selectedDate) {
+                      return CustomScrollView(
+                        slivers: [
+                          SliverToBoxAdapter(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 8),
+                                DailyLogHeader(
+                                  selectedDate: _selectedDate,
+                                  onPrevDay: () {
                                     setState(() {
-                                      _selectedDate = picked;
+                                      _selectedDate = _selectedDate.subtract(
+                                        const Duration(days: 1),
+                                      );
                                     });
-                                  }
-                                },
-                              ),
-                              const SizedBox(height: 24),
-                              DayTimeline(
-                                selectedDate: _selectedDate,
-                                tasks: _tasks,
-                                isTracking: _isTracking,
-                                trackingStartTime: _trackingStartTime,
-                                trackingTaskTitle: _taskController.text.trim(),
-                                palette: _palette,
-                              ),
-                              const SizedBox(height: 24),
-                              _buildTaskListHeader(),
-                              const SizedBox(height: 12),
-                            ],
-                          ),
-                        ),
-                        SliverList(
-                          delegate: SliverChildBuilderDelegate((
-                            context,
-                            index,
-                          ) {
-                            final task = _tasks[index];
-                            final isTrackingThisTask = _isTracking &&
-                                _taskController.text.trim() == task.title;
-                            final activeDuration = isTrackingThisTask &&
-                                    _trackingStartTime != null
-                                ? DateTime.now().difference(_trackingStartTime!)
-                                : Duration.zero;
+                                  },
+                                  onNextDay: () {
+                                    setState(() {
+                                      _selectedDate = _selectedDate.add(
+                                        const Duration(days: 1),
+                                      );
+                                    });
+                                  },
+                                  onToday: () {
+                                    setState(() {
+                                      final now = DateTime.now();
+                                      _selectedDate = DateTime(
+                                        now.year,
+                                        now.month,
+                                        now.day,
+                                      );
+                                    });
+                                  },
+                                  onJumpToDate: () async {
+                                    final dates = await DatabaseService.instance
+                                        .getSessionDates();
+                                    final now = DateTime.now();
+                                    final today =
+                                        DateTime(now.year, now.month, now.day);
+                                    final selected = DateTime(
+                                        _selectedDate.year,
+                                        _selectedDate.month,
+                                        _selectedDate.day);
 
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: TaskItem(
-                                task: task,
-                                isTracking: isTrackingThisTask,
-                                activeDuration: activeDuration,
-                                onToggleExpand: () => setState(
-                                  () => task.isExpanded = !task.isExpanded,
+                                    // Ensure initial date and today are selectable
+                                    dates.add(today);
+                                    dates.add(selected);
+
+                                    if (!mounted) return;
+
+                                    final DateTime? picked =
+                                        await showDatePicker(
+                                      context: context,
+                                      initialDate: _selectedDate,
+                                      firstDate: DateTime(2020),
+                                      lastDate: DateTime(2101),
+                                      selectableDayPredicate: (date) {
+                                        final normalized = DateTime(
+                                            date.year, date.month, date.day);
+                                        return dates.contains(normalized);
+                                      },
+                                    );
+                                    if (picked != null &&
+                                        picked != _selectedDate) {
+                                      setState(() {
+                                        _selectedDate = picked;
+                                      });
+                                    }
+                                  },
                                 ),
-                                onStartTracking: () {
-                                  _taskController.text = task.title;
-                                  _toggleTracking();
-                                },
-                                onEdit: () => _editTask(task),
-                                onDelete: () => _deleteTask(task),
-                                onEditBlock: (block) =>
-                                    _editTimeBlock(task, block),
-                                onDeleteBlock: (blockIndex) =>
-                                    _deleteTimeBlock(task, blockIndex),
-                              ),
-                            );
-                          }, childCount: _tasks.length),
-                        ),
-                      ],
-                    ),
+                                const SizedBox(height: 24),
+                                DayTimeline(
+                                  selectedDate: _selectedDate,
+                                  tasks: _tasks,
+                                  isTracking: _isTracking,
+                                  trackingStartTime: _trackingStartTime,
+                                  trackingTaskTitle:
+                                      _taskController.text.trim(),
+                                  palette: _palette,
+                                ),
+                                const SizedBox(height: 24),
+                                _buildTaskListHeader(),
+                                const SizedBox(height: 12),
+                              ],
+                            ),
+                          ),
+                          SliverList(
+                            delegate: SliverChildBuilderDelegate((
+                              context,
+                              index,
+                            ) {
+                              final task = filteredTasks[index];
+                              final isTrackingThisTask = _isTracking &&
+                                  _taskController.text.trim() == task.title;
+                              final activeDuration = isTrackingThisTask &&
+                                      _trackingStartTime != null
+                                  ? DateTime.now()
+                                      .difference(_trackingStartTime!)
+                                  : Duration.zero;
+
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: TaskItem(
+                                  task: task,
+                                  isTracking: isTrackingThisTask,
+                                  activeDuration: activeDuration,
+                                  onToggleExpand: () => setState(
+                                    () => task.isExpanded = !task.isExpanded,
+                                  ),
+                                  onStartTracking: () {
+                                    _taskController.text = task.title;
+                                    _toggleTracking();
+                                  },
+                                  onEdit: () => _editTask(task),
+                                  onDelete: () => _deleteTask(task),
+                                  onEditBlock: (block) =>
+                                      _editTimeBlock(task, block),
+                                  onDeleteBlock: (blockIndex) =>
+                                      _deleteTimeBlock(task, blockIndex),
+                                ),
+                              );
+                            }, childCount: filteredTasks.length),
+                          ),
+                        ],
+                      );
+                    }),
                   ),
           ),
         ],
@@ -415,20 +445,50 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          children: [
-            const Text(
-              'Tasks',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(width: 8),
-            IconButton(
-              onPressed: _addNewTask,
-              icon: const Icon(Icons.add_circle_outline, color: Color(0xFF818CF8)),
-              tooltip: 'Add New Task',
-            ),
-          ],
+        Expanded(
+          child: Row(
+            children: [
+              const Text(
+                'Tasks',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                onPressed: _addNewTask,
+                icon: const Icon(Icons.add_circle_outline, color: Color(0xFF818CF8)),
+                tooltip: 'Add New Task',
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Container(
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    style: const TextStyle(fontSize: 14),
+                    decoration: InputDecoration(
+                      hintText: 'Search tasks...',
+                      hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+                      prefixIcon: Icon(Icons.search, size: 18, color: Colors.white.withOpacity(0.3)),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                      suffixIcon: _searchQuery.isNotEmpty 
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 16),
+                            onPressed: () => _searchController.clear(),
+                          )
+                        : null,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
+        const SizedBox(width: 16),
         Text(totalTimeStr, style: TextStyle(color: Colors.grey[400])),
       ],
     );
