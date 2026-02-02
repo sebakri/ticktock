@@ -15,7 +15,6 @@ class TaskItem extends StatelessWidget {
   final VoidCallback onToggleExpand;
   final VoidCallback onStartTracking;
   final VoidCallback onEdit;
-  final VoidCallback onDelete;
   final Function(TimeBlock) onEditBlock;
   final Function(int) onDeleteBlock;
 
@@ -31,7 +30,6 @@ class TaskItem extends StatelessWidget {
     required this.onToggleExpand,
     required this.onStartTracking,
     required this.onEdit,
-    required this.onDelete,
     required this.onEditBlock,
     required this.onDeleteBlock,
   });
@@ -88,25 +86,24 @@ class TaskItem extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 16),
+                  SizedBox(
+                    width: 48,
+                    child: shortcutLabel != null
+                        ? Center(
+                            child: ShortcutBadge(
+                                label: shortcutLabel!, isLight: true))
+                        : null,
+                  ),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                task.title,
-                                style: const TextStyle(
-                                    fontSize: 16, fontWeight: FontWeight.w600),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            if (shortcutLabel != null) ...[
-                              const SizedBox(width: 8),
-                              ShortcutBadge(label: shortcutLabel!, isLight: true),
-                            ],
-                          ],
+                        Text(
+                          task.title,
+                          style: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w600),
+                          overflow: TextOverflow.ellipsis,
                         ),
                         if (task.description.isNotEmpty)
                           Text(
@@ -138,10 +135,6 @@ class TaskItem extends StatelessWidget {
                   IconButton(
                     icon: const Icon(Icons.edit, size: 20),
                     onPressed: onEdit,
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete, size: 20),
-                    onPressed: onDelete,
                   ),
                 ],
               ),

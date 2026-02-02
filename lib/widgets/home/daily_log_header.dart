@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../shortcut_badge.dart';
 
 class DailyLogHeader extends StatelessWidget {
   final DateTime selectedDate;
@@ -55,36 +56,51 @@ class DailyLogHeader extends StatelessWidget {
               ElevatedButton(
                 onPressed: onToday,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF818CF8).withOpacity(0.1),
-                  foregroundColor: const Color(0xFF818CF8),
+                  backgroundColor: const Color(0xFF4F46E5),
+                  foregroundColor: Colors.white,
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
                   elevation: 0,
                 ),
-                child: const Text('Today',
-                    style:
-                        TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Today',
+                        style: TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.bold)),
+                    SizedBox(width: 8),
+                    ShortcutBadge(label: '⌘T', isLight: true),
+                  ],
+                ),
               ),
               const SizedBox(
                 height: 24,
                 child: VerticalDivider(color: Colors.white24, width: 32),
               ),
-              ElevatedButton.icon(
+              ElevatedButton(
                 onPressed: onJumpToDate,
-                icon: const Icon(Icons.calendar_today, size: 16),
-                label: const Text('Jump to date',
-                    style:
-                        TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white.withOpacity(0.05),
+                  backgroundColor: const Color(0xFF4F46E5),
                   foregroundColor: Colors.white,
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
                   elevation: 0,
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.calendar_today, size: 16),
+                    SizedBox(width: 8),
+                    Text('Jump to date',
+                        style: TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.bold)),
+                    SizedBox(width: 8),
+                    ShortcutBadge(label: '⌘D', isLight: true),
+                  ],
                 ),
               ),
             ],

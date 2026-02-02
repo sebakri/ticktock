@@ -35,6 +35,14 @@ class ShowHelpIntent extends Intent {
   const ShowHelpIntent();
 }
 
+class JumpToDateIntent extends Intent {
+  const JumpToDateIntent();
+}
+
+class GoToTodayIntent extends Intent {
+  const GoToTodayIntent();
+}
+
 class ActivateTaskIntent extends Intent {
   final int index;
   const ActivateTaskIntent(this.index);
@@ -222,9 +230,21 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                 _buildShortcutRow('⌘ + N', 'New Task'),
                 _buildShortcutRow('⌘ + F', 'Search Tasks'),
                 _buildShortcutRow('⌘ + S', 'Toggle Tracking'),
-                _buildShortcutRow('⌘ + 1-9', 'Activate task in library'),
+                _buildShortcutRow('⌘ + T', 'Go to Today'),
+                _buildShortcutRow('⌘ + D', 'Jump to Date'),
+                _buildShortcutRow('⌘ + 1-9', 'Open task in library'),
                 _buildShortcutRow('Esc', 'Clear Search / Unfocus'),
                 _buildShortcutRow('?', 'Show this help'),
+                const Divider(color: Colors.white10),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Text('Inside Task Modal',
+                      style:
+                          TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                ),
+                _buildShortcutRow('⌘ + S', 'Start Tracking'),
+                _buildShortcutRow('⌘ + ⌫', 'Delete Task'),
+                _buildShortcutRow('⌘ + ↵', 'Save Changes'),
                 const SizedBox(height: 16),
               ],
             ),
@@ -291,6 +311,47 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
         },
       ),
     );
+  }
+
+  void _goToToday() {
+    setState(() {
+      final now = DateTime.now();
+      _selectedDate = DateTime(
+        now.year,
+        now.month,
+        now.day,
+      );
+    });
+  }
+
+  Future<void> _jumpToDate() async {
+    final dates = await DatabaseService.instance.getSessionDates();
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final selected =
+        DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+
+    // Ensure initial date and today are selectable
+    dates.add(today);
+    dates.add(selected);
+
+    if (!mounted) return;
+
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2101),
+      selectableDayPredicate: (date) {
+        final normalized = DateTime(date.year, date.month, date.day);
+        return dates.contains(normalized);
+      },
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+      });
+    }
   }
 
   void _onStartTracking(String title) async {
@@ -385,6 +446,14 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
           await DatabaseService.instance.updateTask(task);
           _refreshTasks();
         },
+        onDelete: () {
+          _deleteTask(task);
+          Navigator.pop(context);
+        },
+        onStart: () {
+          _onStartTracking(task.title);
+          Navigator.pop(context);
+        },
       ),
     );
   }
@@ -464,6 +533,10 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
             const ClearSearchIntent(),
         const SingleActivator(LogicalKeyboardKey.slash, shift: true):
             const ShowHelpIntent(),
+        const SingleActivator(LogicalKeyboardKey.keyT, meta: true):
+            const GoToTodayIntent(),
+        const SingleActivator(LogicalKeyboardKey.keyD, meta: true):
+            const JumpToDateIntent(),
         // Cmd + 1-9
         const SingleActivator(LogicalKeyboardKey.digit1, meta: true):
             const ActivateTaskIntent(0),
@@ -495,10 +568,22 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
           ShowHelpIntent: CallbackAction<ShowHelpIntent>(
             onInvoke: (intent) => _showHelpDialog(),
           ),
+          GoToTodayIntent: CallbackAction<GoToTodayIntent>(
+            onInvoke: (intent) {
+              _goToToday();
+              return null;
+            },
+          ),
+          JumpToDateIntent: CallbackAction<JumpToDateIntent>(
+            onInvoke: (intent) {
+              _jumpToDate();
+              return null;
+            },
+          ),
           ActivateTaskIntent: CallbackAction<ActivateTaskIntent>(
             onInvoke: (intent) {
               if (intent.index < libraryTasks.length) {
-                _onStartTracking(libraryTasks[intent.index].title);
+                _editTask(libraryTasks[intent.index]);
               }
               return null;
             },
@@ -573,73 +658,27 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                                                             crossAxisAlignment: CrossAxisAlignment.start,
                                                             children: [
                                                               const SizedBox(height: 8),
-                                                              DailyLogHeader(
-                                                                selectedDate: _selectedDate,
-                                                                onPrevDay: () {
-                                                                  setState(() {
-                                                                    _selectedDate =
-                                                                        _selectedDate.subtract(
-                                                                      const Duration(days: 1),
-                                                                    );
-                                                                  });
-                                                                },
-                                                                onNextDay: () {
-                                                                  setState(() {
-                                                                    _selectedDate = _selectedDate.add(
-                                                                      const Duration(days: 1),
-                                                                    );
-                                                                  });
-                                                                },
-                                                                onToday: () {
-                                                                  setState(() {
-                                                                    final now = DateTime.now();
-                                                                    _selectedDate = DateTime(
-                                                                      now.year,
-                                                                      now.month,
-                                                                      now.day,
-                                                                    );
-                                                                  });
-                                                                },
-                                                                onJumpToDate: () async {
-                                                                  final dates = await DatabaseService
-                                                                      .instance
-                                                                      .getSessionDates();
-                                                                  final now = DateTime.now();
-                                                                  final today = DateTime(
-                                                                      now.year, now.month, now.day);
-                                                                  final selected = DateTime(
-                                                                      _selectedDate.year,
-                                                                      _selectedDate.month,
-                                                                      _selectedDate.day);
-                          
-                                                                  // Ensure initial date and today are selectable
-                                                                  dates.add(today);
-                                                                  dates.add(selected);
-                          
-                                                                  if (!mounted) return;
-                          
-                                                                  final DateTime? picked =
-                                                                      await showDatePicker(
-                                                                    context: context,
-                                                                    initialDate: _selectedDate,
-                                                                    firstDate: DateTime(2020),
-                                                                    lastDate: DateTime(2101),
-                                                                    selectableDayPredicate: (date) {
-                                                                      final normalized = DateTime(
-                                                                          date.year,
-                                                                          date.month,
-                                                                          date.day);
-                                                                      return dates.contains(normalized);
-                                                                    },
-                                                                  );
-                                                                  if (picked != null &&
-                                                                      picked != _selectedDate) {
-                                                                    setState(() {
-                                                                      _selectedDate = picked;
-                                                                    });
-                                                                  }
-                                                                },
-                                                              ),
+                                                                                                DailyLogHeader(
+                                                                                                  selectedDate: _selectedDate,
+                                                                                                  onPrevDay: () {
+                                                                                                    setState(() {
+                                                                                                      _selectedDate =
+                                                                                                          _selectedDate.subtract(
+                                                                                                        const Duration(days: 1),
+                                                                                                      );
+                                                                                                    });
+                                                                                                  },
+                                                                                                  onNextDay: () {
+                                                                                                    setState(() {
+                                                                                                      _selectedDate = _selectedDate.add(
+                                                                                                        const Duration(days: 1),
+                                                                                                      );
+                                                                                                    });
+                                                                                                  },
+                                                                                                  onToday: _goToToday,
+                                                                                                  onJumpToDate: _jumpToDate,
+                                                                                                ),
+                                                              
                                                               const SizedBox(height: 24),
                                                               DayTimeline(
                                                                 selectedDate: _selectedDate,
@@ -714,7 +753,6 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                                                                   onStartTracking: () =>
                                                                       _onStartTracking(task.title),
                                                                   onEdit: () => _editTask(task),
-                                                                  onDelete: () => _deleteTask(task),
                                                                   onEditBlock: (block) =>
                                                                       _editTimeBlock(task, block),
                                                                   onDeleteBlock: (blockIndex) =>
@@ -785,7 +823,6 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                                                                   onStartTracking: () =>
                                                                       _onStartTracking(task.title),
                                                                   onEdit: () => _editTask(task),
-                                                                  onDelete: () => _deleteTask(task),
                                                                   onEditBlock: (block) =>
                                                                       _editTimeBlock(task, block),
                                                                   onDeleteBlock: (blockIndex) =>
