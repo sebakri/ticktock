@@ -22,15 +22,6 @@ class DailyLogHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Daily Log',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Track your personal productivity flow.',
-          style: TextStyle(color: Colors.grey[400], fontSize: 14),
-        ),
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -49,7 +40,10 @@ class DailyLogHeader extends StatelessWidget {
                 child: Center(
                   child: Text(
                     DateFormat('MMM dd, yyyy').format(selectedDate),
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
@@ -60,7 +54,10 @@ class DailyLogHeader extends StatelessWidget {
               const SizedBox(width: 16),
               TextButton(
                 onPressed: onToday,
-                child: const Text('Today', style: TextStyle(color: Color(0xFF818CF8))),
+                child: const Text(
+                  'Today',
+                  style: TextStyle(color: Color(0xFF818CF8)),
+                ),
               ),
               const SizedBox(
                 height: 24,
