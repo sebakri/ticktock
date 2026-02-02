@@ -260,13 +260,13 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
         children: [
           DragToMoveArea(
             child: Container(
-              height: 32,
+              height: 60,
               width: double.infinity,
               alignment: Alignment.center,
               child: Text(
                 'TickTock',
                 style: GoogleFonts.fascinate(
-                  fontSize: 22,
+                  fontSize: 36,
                   color: const Color(0xFF818CF8),
                 ),
               ),
