@@ -7,7 +7,6 @@ class Task {
   String description;
   Color color;
   final List<TimeBlock> blocks;
-  bool isExpanded;
 
   Task({
     this.id,
@@ -15,7 +14,6 @@ class Task {
     this.description = '',
     required this.color,
     List<TimeBlock>? blocks,
-    this.isExpanded = false,
   }) : blocks = blocks ?? [];
 
   Duration get totalDuration => blocks.fold(Duration.zero, (sum, block) => sum + block.duration);

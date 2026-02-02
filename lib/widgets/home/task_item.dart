@@ -9,6 +9,7 @@ class TaskItem extends StatelessWidget {
   final Duration activeDuration;
   final Duration? customDuration;
   final String? durationLabel;
+  final bool isExpanded;
   final VoidCallback onToggleExpand;
   final VoidCallback onStartTracking;
   final VoidCallback onEdit;
@@ -23,6 +24,7 @@ class TaskItem extends StatelessWidget {
     this.activeDuration = Duration.zero,
     this.customDuration,
     this.durationLabel,
+    this.isExpanded = false,
     required this.onToggleExpand,
     required this.onStartTracking,
     required this.onEdit,
@@ -51,7 +53,7 @@ class TaskItem extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               decoration: BoxDecoration(
-                color: task.isExpanded ? Colors.white.withOpacity(0.02) : Colors.transparent,
+                color: isExpanded ? Colors.white.withOpacity(0.02) : Colors.transparent,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
               ),
               child: Row(
@@ -131,7 +133,7 @@ class TaskItem extends StatelessWidget {
               ),
             ),
           ),
-          if (task.isExpanded)
+          if (isExpanded)
             ...task.blocks.asMap().entries.map((entry) => _buildTimeBlockItem(task, entry.value, entry.key)),
         ],
       ),

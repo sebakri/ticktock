@@ -53,6 +53,8 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
   List<Task> _tasks = [];
   bool _isLoading = true;
   String _searchQuery = '';
+  final Set<int> _expandedActivityIds = {};
+  final Set<int> _expandedLibraryIds = {};
 
   static const List<Color> _palette = [
     Color(0xFF6366F1), // Indigo
@@ -639,16 +641,31 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
 
                                 return Padding(
                                   padding: const EdgeInsets.only(bottom: 12),
-                                  child: TaskItem(
-                                    task: task,
-                                    isTracking: isTrackingThisTask,
-                                    activeDuration: activeDuration,
-                                    customDuration: task.durationOn(_selectedDate),
-                                    durationLabel: 'On this day',
-                                    onToggleExpand: () => setState(
-                                      () => task.isExpanded = !task.isExpanded,
-                                    ),
-                                    onStartTracking: () => _onStartTracking(task.title),
+                                                                    child: TaskItem(
+                                                                      task: task,
+                                                                      isTracking: isTrackingThisTask,
+                                                                      activeDuration: activeDuration,
+                                                                      customDuration:
+                                                                          task.durationOn(_selectedDate),
+                                                                      durationLabel: 'On this day',
+                                                                      isExpanded:
+                                                                          _expandedActivityIds.contains(task.id),
+                                                                      onToggleExpand: () => setState(
+                                                                        () {
+                                                                          if (task.id != null) {
+                                                                            if (_expandedActivityIds
+                                                                                .contains(task.id)) {
+                                                                              _expandedActivityIds
+                                                                                  .remove(task.id);
+                                                                            } else {
+                                                                              _expandedActivityIds.add(task.id!);
+                                                                            }
+                                                                          }
+                                                                        },
+                                                                      ),
+                                                                      onStartTracking: () =>
+                                                                          _onStartTracking(task.title),
+                                  
                                     onEdit: () => _editTask(task),
                                     onDelete: () => _deleteTask(task),
                                     onEditBlock: (block) =>
@@ -691,16 +708,29 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
 
                                 return Padding(
                                   padding: const EdgeInsets.only(bottom: 12),
-                                  child: TaskItem(
-                                    task: task,
-                                    isTracking: isTrackingThisTask,
-                                    activeDuration: activeDuration,
-                                    durationLabel: 'Lifetime total',
-                                    onToggleExpand: () => setState(
-                                      () => task.isExpanded = !task.isExpanded,
-                                    ),
-                                    onStartTracking: () =>
-                                        _onStartTracking(task.title),
+                                                                    child: TaskItem(
+                                                                      task: task,
+                                                                      isTracking: isTrackingThisTask,
+                                                                      activeDuration: activeDuration,
+                                                                      durationLabel: 'Lifetime total',
+                                                                      isExpanded:
+                                                                          _expandedLibraryIds.contains(task.id),
+                                                                      onToggleExpand: () => setState(
+                                                                        () {
+                                                                          if (task.id != null) {
+                                                                            if (_expandedLibraryIds
+                                                                                .contains(task.id)) {
+                                                                              _expandedLibraryIds
+                                                                                  .remove(task.id);
+                                                                            } else {
+                                                                              _expandedLibraryIds.add(task.id!);
+                                                                            }
+                                                                          }
+                                                                        },
+                                                                      ),
+                                                                      onStartTracking: () =>
+                                                                          _onStartTracking(task.title),
+                                  
                                     onEdit: () => _editTask(task),
                                     onDelete: () => _deleteTask(task),
                                     onEditBlock: (block) =>
