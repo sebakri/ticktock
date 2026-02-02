@@ -469,18 +469,21 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                   child: TextField(
                     controller: _searchController,
                     style: const TextStyle(fontSize: 14),
+                    textAlignVertical: TextAlignVertical.center,
                     decoration: InputDecoration(
                       hintText: 'Search tasks...',
                       hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
-                      prefixIcon: Icon(Icons.search, size: 18, color: Colors.white.withOpacity(0.3)),
+                      prefixIcon: Icon(Icons.search,
+                          size: 18, color: Colors.white.withOpacity(0.3)),
                       border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                      suffixIcon: _searchQuery.isNotEmpty 
-                        ? IconButton(
-                            icon: const Icon(Icons.clear, size: 16),
-                            onPressed: () => _searchController.clear(),
-                          )
-                        : null,
+                      isDense: true,
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear,
+                                  size: 16, color: Colors.white70),
+                              onPressed: () => _searchController.clear(),
+                            )
+                          : null,
                     ),
                   ),
                 ),
