@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'shortcut_badge.dart';
 
 class AddTaskDialog extends StatefulWidget {
   final List<Color> palette;
@@ -52,98 +54,141 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: const Color(0xFF1E293B),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Container(
-        width: 500,
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Add New Task',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white70),
-                  onPressed: () => Navigator.pop(context),
+    void handleSave() {
+      if (_nameController.text.trim().isEmpty || _errorMessage != null) return;
+      widget.onSave(_nameController.text.trim(),
+          _descController.text.trim(), _selectedColor);
+      Navigator.pop(context);
+    }
+
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.enter, meta: true): handleSave,
+        const SingleActivator(LogicalKeyboardKey.escape): () =>
+            Navigator.pop(context),
+      },
+      child: Dialog(
+        backgroundColor: const Color(0xFF1E293B),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          width: 500,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Add New Task',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white70),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const Divider(color: Colors.white10),
+              const SizedBox(height: 16),
+              const Text('Task Name',
+                  style: TextStyle(color: Colors.white70, fontSize: 14)),
+              const SizedBox(height: 8),
+              _buildTextField(_nameController, 'e.g. Design System'),
+              if (_errorMessage != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  _errorMessage!,
+                  style: const TextStyle(color: Colors.redAccent, fontSize: 12),
                 ),
               ],
-            ),
-            const Divider(color: Colors.white10),
-            const SizedBox(height: 16),
-            const Text('Task Name', style: TextStyle(color: Colors.white70, fontSize: 14)),
-            const SizedBox(height: 8),
-            _buildTextField(_nameController, 'e.g. Design System'),
-            if (_errorMessage != null) ...[
-              const SizedBox(height: 4),
-              Text(
-                _errorMessage!,
-                style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+              const SizedBox(height: 16),
+              const Text('Description (optional)',
+                  style: TextStyle(color: Colors.white70, fontSize: 14)),
+              const SizedBox(height: 8),
+              _buildTextField(_descController, 'What is this task about?',
+                  maxLines: 3),
+              const SizedBox(height: 16),
+              const Text('Color',
+                  style: TextStyle(color: Colors.white70, fontSize: 14)),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: widget.palette.map((color) {
+                  final isSelected = _selectedColor == color;
+                  return GestureDetector(
+                    onTap: () => setState(() => _selectedColor = color),
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                      ),
+                      child: isSelected
+                          ? const Icon(Icons.check,
+                              size: 18, color: Colors.white)
+                          : null,
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 40),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0F172A),
+                      foregroundColor: Colors.white70,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 16),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                    child: const Row(
+                      children: [
+                        Text('Cancel', style: TextStyle(fontSize: 14)),
+                        SizedBox(width: 12),
+                        ShortcutBadge(label: 'Esc', isLight: true),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 24),
+                  ElevatedButton(
+                    onPressed: _nameController.text.trim().isEmpty ||
+                            _errorMessage != null
+                        ? null
+                        : handleSave,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF4F46E5),
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: Colors.white10,
+                      disabledForegroundColor: Colors.white24,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 16),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                    child: const Row(
+                      children: [
+                        Text('Add Task',
+                            style: TextStyle(
+                                fontSize: 14, fontWeight: FontWeight.bold)),
+                        SizedBox(width: 12),
+                        ShortcutBadge(label: '⌘↵', isLight: true),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
-            const SizedBox(height: 16),
-            const Text('Description (optional)', style: TextStyle(color: Colors.white70, fontSize: 14)),
-            const SizedBox(height: 8),
-            _buildTextField(_descController, 'What is this task about?', maxLines: 3),
-            const SizedBox(height: 16),
-            const Text('Color', style: TextStyle(color: Colors.white70, fontSize: 14)),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: widget.palette.map((color) {
-                final isSelected = _selectedColor == color;
-                return GestureDetector(
-                  onTap: () => setState(() => _selectedColor = color),
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: color,
-                      shape: BoxShape.circle,
-                    ),
-                    child: isSelected
-                        ? const Icon(Icons.check, size: 18, color: Colors.white)
-                        : null,
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 32),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
-                ),
-                const SizedBox(width: 16),
-                ElevatedButton(
-                  onPressed: _nameController.text.trim().isEmpty || _errorMessage != null
-                      ? null
-                      : () {
-                          widget.onSave(_nameController.text.trim(), _descController.text.trim(), _selectedColor);
-                          Navigator.pop(context);
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4F46E5),
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: Colors.white10,
-                    disabledForegroundColor: Colors.white24,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  child: const Text('Add Task'),
-                ),
-              ],
-            ),
-          ],
+          ),
         ),
       ),
     );

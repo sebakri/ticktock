@@ -12,6 +12,7 @@ import '../widgets/edit_session_dialog.dart';
 import '../widgets/home/daily_log_header.dart';
 import '../widgets/home/day_timeline.dart';
 import '../widgets/home/task_item.dart';
+import '../widgets/shortcut_badge.dart';
 import '../services/database_service.dart';
 
 class AddTaskIntent extends Intent {
@@ -32,6 +33,11 @@ class ClearSearchIntent extends Intent {
 
 class ShowHelpIntent extends Intent {
   const ShowHelpIntent();
+}
+
+class ActivateTaskIntent extends Intent {
+  final int index;
+  const ActivateTaskIntent(this.index);
 }
 
 class HomeScreen extends StatefulWidget {
@@ -177,41 +183,51 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
   void _showHelpDialog() {
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        backgroundColor: const Color(0xFF1E293B),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Container(
-          width: 400,
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Keyboard Shortcuts',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white70),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-              const Divider(color: Colors.white10),
-              const SizedBox(height: 16),
-              _buildShortcutRow('Option + Space', 'Toggle Hide/Show App (Global)'),
-              _buildShortcutRow('Option + S', 'Toggle Tracking (Global)'),
-              const SizedBox(height: 12),
-              _buildShortcutRow('Cmd + N', 'New Task'),
-              _buildShortcutRow('Cmd + F', 'Search Tasks'),
-              _buildShortcutRow('Cmd + S', 'Toggle Tracking'),
-              _buildShortcutRow('Esc', 'Clear Search / Unfocus'),
-              _buildShortcutRow('?', 'Show this help'),
-              const SizedBox(height: 16),
-            ],
+      builder: (context) => CallbackShortcuts(
+        bindings: {
+          const SingleActivator(LogicalKeyboardKey.escape): () =>
+              Navigator.pop(context),
+        },
+        child: Dialog(
+          backgroundColor: const Color(0xFF1E293B),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Container(
+            width: 400,
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Keyboard Shortcuts',
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white70),
+                      onPressed: () => Navigator.pop(context),
+                      tooltip: 'Close (Esc)',
+                    ),
+                  ],
+                ),
+                const Divider(color: Colors.white10),
+                const SizedBox(height: 16),
+                _buildShortcutRow('⌥ + Space', 'Toggle Hide/Show App (Global)'),
+                _buildShortcutRow('⌥ + S', 'Toggle Tracking (Global)'),
+                const SizedBox(height: 12),
+                _buildShortcutRow('⌘ + N', 'New Task'),
+                _buildShortcutRow('⌘ + F', 'Search Tasks'),
+                _buildShortcutRow('⌘ + S', 'Toggle Tracking'),
+                _buildShortcutRow('⌘ + 1-9', 'Activate task in library'),
+                _buildShortcutRow('Esc', 'Clear Search / Unfocus'),
+                _buildShortcutRow('?', 'Show this help'),
+                const SizedBox(height: 16),
+              ],
+            ),
           ),
         ),
       ),
@@ -219,26 +235,27 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
   }
 
   Widget _buildShortcutRow(String keys, String action) {
+    final keyParts = keys.split(' + ');
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFF0F172A),
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: Colors.white10),
-            ),
-            child: Text(
-              keys,
-              style: const TextStyle(
-                fontFamily: 'monospace',
-                color: Color(0xFF818CF8),
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (int i = 0; i < keyParts.length; i++) ...[
+                ShortcutBadge(label: keyParts[i], fontSize: 13),
+                if (i < keyParts.length - 1)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Text('+',
+                        style: TextStyle(
+                            color: Colors.white.withOpacity(0.3),
+                            fontSize: 12)),
+                  ),
+              ],
+            ],
           ),
           Text(
             action,
@@ -406,6 +423,35 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
 
   @override
   Widget build(BuildContext context) {
+    final filteredTasks = _tasks.where((task) {
+      if (_searchQuery.isEmpty) return true;
+      final title = task.title.toLowerCase();
+      final desc = task.description.toLowerCase();
+      if (title.contains(_searchQuery) || desc.contains(_searchQuery)) {
+        return true;
+      }
+      int charIndex = 0;
+      for (int i = 0; i < title.length && charIndex < _searchQuery.length; i++) {
+        if (title[i] == _searchQuery[charIndex]) charIndex++;
+      }
+      return charIndex == _searchQuery.length;
+    }).toList();
+
+    final todayTasks = filteredTasks.where((task) {
+      final hasToday = task.blocks.any((b) =>
+          b.startTime.year == _selectedDate.year &&
+          b.startTime.month == _selectedDate.month &&
+          b.startTime.day == _selectedDate.day);
+      final isTrackingThisTask =
+          _isTracking && _taskController.text.trim() == task.title;
+      final isTodaySelected = DateTime.now().year == _selectedDate.year &&
+          DateTime.now().month == _selectedDate.month &&
+          DateTime.now().day == _selectedDate.day;
+      return hasToday || (isTrackingThisTask && isTodaySelected);
+    }).toList();
+
+    final libraryTasks = filteredTasks;
+
     return Shortcuts(
       shortcuts: {
         const SingleActivator(LogicalKeyboardKey.keyN, meta: true):
@@ -418,6 +464,25 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
             const ClearSearchIntent(),
         const SingleActivator(LogicalKeyboardKey.slash, shift: true):
             const ShowHelpIntent(),
+        // Cmd + 1-9
+        const SingleActivator(LogicalKeyboardKey.digit1, meta: true):
+            const ActivateTaskIntent(0),
+        const SingleActivator(LogicalKeyboardKey.digit2, meta: true):
+            const ActivateTaskIntent(1),
+        const SingleActivator(LogicalKeyboardKey.digit3, meta: true):
+            const ActivateTaskIntent(2),
+        const SingleActivator(LogicalKeyboardKey.digit4, meta: true):
+            const ActivateTaskIntent(3),
+        const SingleActivator(LogicalKeyboardKey.digit5, meta: true):
+            const ActivateTaskIntent(4),
+        const SingleActivator(LogicalKeyboardKey.digit6, meta: true):
+            const ActivateTaskIntent(5),
+        const SingleActivator(LogicalKeyboardKey.digit7, meta: true):
+            const ActivateTaskIntent(6),
+        const SingleActivator(LogicalKeyboardKey.digit8, meta: true):
+            const ActivateTaskIntent(7),
+        const SingleActivator(LogicalKeyboardKey.digit9, meta: true):
+            const ActivateTaskIntent(8),
       },
       child: Actions(
         actions: {
@@ -429,6 +494,14 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
           ),
           ShowHelpIntent: CallbackAction<ShowHelpIntent>(
             onInvoke: (intent) => _showHelpDialog(),
+          ),
+          ActivateTaskIntent: CallbackAction<ActivateTaskIntent>(
+            onInvoke: (intent) {
+              if (intent.index < libraryTasks.length) {
+                _onStartTracking(libraryTasks[intent.index].title);
+              }
+              return null;
+            },
           ),
           ToggleTrackingIntent: CallbackAction<ToggleTrackingIntent>(
             onInvoke: (intent) {
@@ -488,273 +561,252 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                     ),
                   ),
                 ),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                    child: Builder(builder: (context) {
-                      final filteredTasks = _tasks.where((task) {
-                        if (_searchQuery.isEmpty) return true;
-                        final title = task.title.toLowerCase();
-                        final desc = task.description.toLowerCase();
-                        if (title.contains(_searchQuery) ||
-                            desc.contains(_searchQuery)) return true;
-                        int charIndex = 0;
-                        for (int i = 0;
-                            i < title.length && charIndex < _searchQuery.length;
-                            i++) {
-                          if (title[i] == _searchQuery[charIndex]) charIndex++;
-                        }
-                        return charIndex == _searchQuery.length;
-                      }).toList();
-
-                      final todayTasks = filteredTasks.where((task) {
-                        final hasToday = task.blocks.any((b) =>
-                            b.startTime.year == _selectedDate.year &&
-                            b.startTime.month == _selectedDate.month &&
-                            b.startTime.day == _selectedDate.day);
-                        final isTrackingThisTask = _isTracking &&
-                            _taskController.text.trim() == task.title;
-                        final isTodaySelected =
-                            DateTime.now().year == _selectedDate.year &&
-                                DateTime.now().month == _selectedDate.month &&
-                                DateTime.now().day == _selectedDate.day;
-                        return hasToday || (isTrackingThisTask && isTodaySelected);
-                      }).toList();
-
-                      final libraryTasks = filteredTasks;
-
-                      return CustomScrollView(
-                        slivers: [
-                          SliverToBoxAdapter(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const SizedBox(height: 8),
-                                DailyLogHeader(
-                                  selectedDate: _selectedDate,
-                                  onPrevDay: () {
-                                    setState(() {
-                                      _selectedDate = _selectedDate.subtract(
-                                        const Duration(days: 1),
-                                      );
-                                    });
-                                  },
-                                  onNextDay: () {
-                                    setState(() {
-                                      _selectedDate = _selectedDate.add(
-                                        const Duration(days: 1),
-                                      );
-                                    });
-                                  },
-                                  onToday: () {
-                                    setState(() {
-                                      final now = DateTime.now();
-                                      _selectedDate = DateTime(
-                                        now.year,
-                                        now.month,
-                                        now.day,
-                                      );
-                                    });
-                                  },
-                                  onJumpToDate: () async {
-                                    final dates = await DatabaseService.instance
-                                        .getSessionDates();
-                                    final now = DateTime.now();
-                                    final today =
-                                        DateTime(now.year, now.month, now.day);
-                                    final selected = DateTime(
-                                        _selectedDate.year,
-                                        _selectedDate.month,
-                                        _selectedDate.day);
-
-                                    // Ensure initial date and today are selectable
-                                    dates.add(today);
-                                    dates.add(selected);
-
-                                    if (!mounted) return;
-
-                                    final DateTime? picked =
-                                        await showDatePicker(
-                                      context: context,
-                                      initialDate: _selectedDate,
-                                      firstDate: DateTime(2020),
-                                      lastDate: DateTime(2101),
-                                      selectableDayPredicate: (date) {
-                                        final normalized = DateTime(
-                                            date.year, date.month, date.day);
-                                        return dates.contains(normalized);
-                                      },
-                                    );
-                                    if (picked != null &&
-                                        picked != _selectedDate) {
-                                      setState(() {
-                                        _selectedDate = picked;
-                                      });
-                                    }
-                                  },
-                                ),
-                                const SizedBox(height: 24),
-                                DayTimeline(
-                                  selectedDate: _selectedDate,
-                                  tasks: _tasks,
-                                  isTracking: _isTracking,
-                                  trackingStartTime: _trackingStartTime,
-                                  trackingTaskTitle:
-                                      _taskController.text.trim(),
-                                  palette: _palette,
-                                ),
-                                const SizedBox(height: 24),
-                                _buildTaskListHeader(),
-                                const SizedBox(height: 12),
-                              ],
-                            ),
-                          ),
-                          if (todayTasks.isNotEmpty) ...[
-                            SliverToBoxAdapter(
-                              child: Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child: Text(
-                                  'ACTIVITY',
-                                  style: TextStyle(
-                                      color: Colors.grey[500],
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 1.2),
-                                ),
-                              ),
-                            ),
-                            SliverList(
-                              delegate: SliverChildBuilderDelegate((
-                                context,
-                                index,
-                              ) {
-                                final task = todayTasks[index];
-                                final isTrackingThisTask = _isTracking &&
-                                    _taskController.text.trim() == task.title;
-                                final activeDuration = isTrackingThisTask &&
-                                        _trackingStartTime != null
-                                    ? DateTime.now()
-                                        .difference(_trackingStartTime!)
-                                    : Duration.zero;
-
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 12),
-                                                                    child: TaskItem(
-                                                                      task: task,
-                                                                      isTracking: isTrackingThisTask,
-                                                                      activeDuration: activeDuration,
-                                                                      customDuration:
-                                                                          task.durationOn(_selectedDate),
-                                                                      durationLabel: 'On this day',
-                                                                      isExpanded:
-                                                                          _expandedActivityIds.contains(task.id),
-                                                                      onToggleExpand: () => setState(
-                                                                        () {
-                                                                          if (task.id != null) {
-                                                                            if (_expandedActivityIds
-                                                                                .contains(task.id)) {
-                                                                              _expandedActivityIds
-                                                                                  .remove(task.id);
-                                                                            } else {
-                                                                              _expandedActivityIds.add(task.id!);
-                                                                            }
-                                                                          }
-                                                                        },
-                                                                      ),
-                                                                      onStartTracking: () =>
-                                                                          _onStartTracking(task.title),
-                                  
-                                    onEdit: () => _editTask(task),
-                                    onDelete: () => _deleteTask(task),
-                                    onEditBlock: (block) =>
-                                        _editTimeBlock(task, block),
-                                    onDeleteBlock: (blockIndex) =>
-                                        _deleteTimeBlock(task, blockIndex),
+                                          Expanded(
+                                            child: _isLoading
+                                                ? const Center(child: CircularProgressIndicator())
+                                                : Padding(
+                                                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                                                    child: CustomScrollView(
+                                                      slivers: [
+                                                        SliverToBoxAdapter(
+                                                          child: Column(
+                                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                                            children: [
+                                                              const SizedBox(height: 8),
+                                                              DailyLogHeader(
+                                                                selectedDate: _selectedDate,
+                                                                onPrevDay: () {
+                                                                  setState(() {
+                                                                    _selectedDate =
+                                                                        _selectedDate.subtract(
+                                                                      const Duration(days: 1),
+                                                                    );
+                                                                  });
+                                                                },
+                                                                onNextDay: () {
+                                                                  setState(() {
+                                                                    _selectedDate = _selectedDate.add(
+                                                                      const Duration(days: 1),
+                                                                    );
+                                                                  });
+                                                                },
+                                                                onToday: () {
+                                                                  setState(() {
+                                                                    final now = DateTime.now();
+                                                                    _selectedDate = DateTime(
+                                                                      now.year,
+                                                                      now.month,
+                                                                      now.day,
+                                                                    );
+                                                                  });
+                                                                },
+                                                                onJumpToDate: () async {
+                                                                  final dates = await DatabaseService
+                                                                      .instance
+                                                                      .getSessionDates();
+                                                                  final now = DateTime.now();
+                                                                  final today = DateTime(
+                                                                      now.year, now.month, now.day);
+                                                                  final selected = DateTime(
+                                                                      _selectedDate.year,
+                                                                      _selectedDate.month,
+                                                                      _selectedDate.day);
+                          
+                                                                  // Ensure initial date and today are selectable
+                                                                  dates.add(today);
+                                                                  dates.add(selected);
+                          
+                                                                  if (!mounted) return;
+                          
+                                                                  final DateTime? picked =
+                                                                      await showDatePicker(
+                                                                    context: context,
+                                                                    initialDate: _selectedDate,
+                                                                    firstDate: DateTime(2020),
+                                                                    lastDate: DateTime(2101),
+                                                                    selectableDayPredicate: (date) {
+                                                                      final normalized = DateTime(
+                                                                          date.year,
+                                                                          date.month,
+                                                                          date.day);
+                                                                      return dates.contains(normalized);
+                                                                    },
+                                                                  );
+                                                                  if (picked != null &&
+                                                                      picked != _selectedDate) {
+                                                                    setState(() {
+                                                                      _selectedDate = picked;
+                                                                    });
+                                                                  }
+                                                                },
+                                                              ),
+                                                              const SizedBox(height: 24),
+                                                              DayTimeline(
+                                                                selectedDate: _selectedDate,
+                                                                tasks: _tasks,
+                                                                isTracking: _isTracking,
+                                                                trackingStartTime: _trackingStartTime,
+                                                                trackingTaskTitle:
+                                                                    _taskController.text.trim(),
+                                                                palette: _palette,
+                                                              ),
+                                                              const SizedBox(height: 24),
+                                                              _buildTaskListHeader(),
+                                                              const SizedBox(height: 12),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                        if (todayTasks.isNotEmpty) ...[
+                                                          SliverToBoxAdapter(
+                                                            child: Padding(
+                                                              padding: const EdgeInsets.only(bottom: 12),
+                                                              child: Text(
+                                                                'ACTIVITY',
+                                                                style: TextStyle(
+                                                                    color: Colors.grey[500],
+                                                                    fontSize: 12,
+                                                                    fontWeight: FontWeight.bold,
+                                                                    letterSpacing: 1.2),
+                                                              ),
+                                                            ),
+                                                          ),
+                                                          SliverList(
+                                                            delegate: SliverChildBuilderDelegate((
+                                                              context,
+                                                              index,
+                                                            ) {
+                                                              final task = todayTasks[index];
+                                                              final isTrackingThisTask = _isTracking &&
+                                                                  _taskController.text.trim() ==
+                                                                      task.title;
+                                                              final activeDuration =
+                                                                  isTrackingThisTask &&
+                                                                          _trackingStartTime != null
+                                                                      ? DateTime.now().difference(
+                                                                          _trackingStartTime!)
+                                                                      : Duration.zero;
+                          
+                                                              return Padding(
+                                                                padding:
+                                                                    const EdgeInsets.only(bottom: 12),
+                                                                child: TaskItem(
+                                                                  task: task,
+                                                                  isTracking: isTrackingThisTask,
+                                                                  activeDuration: activeDuration,
+                                                                  customDuration:
+                                                                      task.durationOn(_selectedDate),
+                                                                  durationLabel: 'On this day',
+                                                                  isExpanded:
+                                                                      _expandedActivityIds.contains(task.id),
+                                                                  onToggleExpand: () => setState(
+                                                                    () {
+                                                                      if (task.id != null) {
+                                                                        if (_expandedActivityIds
+                                                                            .contains(task.id)) {
+                                                                          _expandedActivityIds
+                                                                              .remove(task.id);
+                                                                        } else {
+                                                                          _expandedActivityIds.add(task.id!);
+                                                                        }
+                                                                      }
+                                                                    },
+                                                                  ),
+                                                                  onStartTracking: () =>
+                                                                      _onStartTracking(task.title),
+                                                                  onEdit: () => _editTask(task),
+                                                                  onDelete: () => _deleteTask(task),
+                                                                  onEditBlock: (block) =>
+                                                                      _editTimeBlock(task, block),
+                                                                  onDeleteBlock: (blockIndex) =>
+                                                                      _deleteTimeBlock(
+                                                                          task, blockIndex),
+                                                                ),
+                                                              );
+                                                            }, childCount: todayTasks.length),
+                                                          ),
+                                                          const SliverToBoxAdapter(
+                                                              child: SizedBox(height: 12)),
+                                                        ],
+                                                        if (libraryTasks.isNotEmpty) ...[
+                                                          SliverToBoxAdapter(
+                                                            child: Padding(
+                                                              padding:
+                                                                  const EdgeInsets.only(bottom: 12),
+                                                              child: Text(
+                                                                'LIBRARY',
+                                                                style: TextStyle(
+                                                                    color: Colors.grey[500],
+                                                                    fontSize: 12,
+                                                                    fontWeight: FontWeight.bold,
+                                                                    letterSpacing: 1.2),
+                                                              ),
+                                                            ),
+                                                          ),
+                                                          SliverList(
+                                                            delegate: SliverChildBuilderDelegate((
+                                                              context,
+                                                              index,
+                                                            ) {
+                                                              final task = libraryTasks[index];
+                                                              final isTrackingThisTask = _isTracking &&
+                                                                  _taskController.text.trim() ==
+                                                                      task.title;
+                                                              final activeDuration =
+                                                                  isTrackingThisTask &&
+                                                                          _trackingStartTime != null
+                                                                      ? DateTime.now().difference(
+                                                                          _trackingStartTime!)
+                                                                      : Duration.zero;
+                          
+                                                              return Padding(
+                                                                padding:
+                                                                    const EdgeInsets.only(bottom: 12),
+                                                                child: TaskItem(
+                                                                  task: task,
+                                                                  isTracking: isTrackingThisTask,
+                                                                  activeDuration: activeDuration,
+                                                                  durationLabel: 'Lifetime total',
+                                                                  isExpanded:
+                                                                      _expandedLibraryIds.contains(task.id),
+                                                                  shortcutLabel: index < 9 ? '⌘${index + 1}' : null,
+                                                                  onToggleExpand: () => setState(
+                                                                    () {
+                                                                      if (task.id != null) {
+                                                                        if (_expandedLibraryIds
+                                                                            .contains(task.id)) {
+                                                                          _expandedLibraryIds
+                                                                              .remove(task.id);
+                                                                        } else {
+                                                                          _expandedLibraryIds.add(task.id!);
+                                                                        }
+                                                                      }
+                                                                    },
+                                                                  ),
+                                                                  onStartTracking: () =>
+                                                                      _onStartTracking(task.title),
+                                                                  onEdit: () => _editTask(task),
+                                                                  onDelete: () => _deleteTask(task),
+                                                                  onEditBlock: (block) =>
+                                                                      _editTimeBlock(task, block),
+                                                                  onDeleteBlock: (blockIndex) =>
+                                                                      _deleteTimeBlock(
+                                                                          task, blockIndex),
+                                                                ),
+                                                              );
+                                                            }, childCount: libraryTasks.length),
+                                                          ),
+                                                        ],
+                                                      ],
+                                                    ),
+                                                  ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                   ),
-                                );
-                              }, childCount: todayTasks.length),
-                            ),
-                            const SliverToBoxAdapter(child: SizedBox(height: 12)),
-                          ],
-                          if (libraryTasks.isNotEmpty) ...[
-                            SliverToBoxAdapter(
-                              child: Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child: Text(
-                                  'LIBRARY',
-                                  style: TextStyle(
-                                      color: Colors.grey[500],
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 1.2),
                                 ),
-                              ),
-                            ),
-                            SliverList(
-                              delegate: SliverChildBuilderDelegate((
-                                context,
-                                index,
-                              ) {
-                                final task = libraryTasks[index];
-                                final isTrackingThisTask = _isTracking &&
-                                    _taskController.text.trim() == task.title;
-                                final activeDuration = isTrackingThisTask &&
-                                        _trackingStartTime != null
-                                    ? DateTime.now()
-                                        .difference(_trackingStartTime!)
-                                    : Duration.zero;
-
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 12),
-                                                                    child: TaskItem(
-                                                                      task: task,
-                                                                      isTracking: isTrackingThisTask,
-                                                                      activeDuration: activeDuration,
-                                                                      durationLabel: 'Lifetime total',
-                                                                      isExpanded:
-                                                                          _expandedLibraryIds.contains(task.id),
-                                                                      onToggleExpand: () => setState(
-                                                                        () {
-                                                                          if (task.id != null) {
-                                                                            if (_expandedLibraryIds
-                                                                                .contains(task.id)) {
-                                                                              _expandedLibraryIds
-                                                                                  .remove(task.id);
-                                                                            } else {
-                                                                              _expandedLibraryIds.add(task.id!);
-                                                                            }
-                                                                          }
-                                                                        },
-                                                                      ),
-                                                                      onStartTracking: () =>
-                                                                          _onStartTracking(task.title),
-                                  
-                                    onEdit: () => _editTask(task),
-                                    onDelete: () => _deleteTask(task),
-                                    onEditBlock: (block) =>
-                                        _editTimeBlock(task, block),
-                                    onDeleteBlock: (blockIndex) =>
-                                        _deleteTimeBlock(task, blockIndex),
-                                  ),
-                                );
-                              }, childCount: libraryTasks.length),
-                            ),
-                          ],
-                        ],
-                      );
-                    }),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
+                              );
+                            }
   Widget _buildTaskListHeader() {
     final totalDuration = _tasks.fold(
       Duration.zero,
@@ -781,40 +833,66 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                 'Tasks',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(width: 8),
-                          IconButton(
-                            onPressed: _addNewTask,
-                            icon: const Icon(Icons.add_circle_outline, color: Color(0xFF818CF8)),
-                            tooltip: 'Add New Task (Cmd + N)',
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Container(
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.05),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: TextField(
-                                controller: _searchController,
-                                focusNode: _searchFocusNode,
-                                style: const TextStyle(fontSize: 14),
-                                textAlignVertical: TextAlignVertical.center,
-                                decoration: InputDecoration(
-                                  hintText: 'Search tasks... (Cmd + F)',
-                                  hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
-              
+              const SizedBox(width: 16),
+              ElevatedButton(
+                onPressed: _addNewTask,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF4F46E5),
+                  foregroundColor: Colors.white,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add, size: 18),
+                    SizedBox(width: 8),
+                    Text('New Task',
+                        style: TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.bold)),
+                    SizedBox(width: 12),
+                    ShortcutBadge(label: '⌘N', isLight: true),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Container(
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    focusNode: _searchFocusNode,
+                    style: const TextStyle(fontSize: 14),
+                    textAlignVertical: TextAlignVertical.center,
+                    decoration: InputDecoration(
+                      hintText: 'Search tasks...',
+                      hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
                       prefixIcon: Icon(Icons.search,
-                          size: 18, color: Colors.white.withOpacity(0.3)),
+                          size: 20, color: Colors.white.withOpacity(0.3)),
                       border: InputBorder.none,
                       isDense: true,
                       suffixIcon: _searchQuery.isNotEmpty
                           ? IconButton(
                               icon: const Icon(Icons.clear,
-                                  size: 16, color: Colors.white70),
+                                  size: 18, color: Colors.white70),
                               onPressed: () => _searchController.clear(),
                             )
-                          : null,
+                          : const Padding(
+                              padding: EdgeInsets.only(right: 12),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  ShortcutBadge(label: '⌘F', isLight: true),
+                                ],
+                              ),
+                            ),
                     ),
                   ),
                 ),

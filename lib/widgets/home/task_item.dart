@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/task.dart';
 import '../../models/time_block.dart';
+import '../shortcut_badge.dart';
 
 class TaskItem extends StatelessWidget {
   final Task task;
@@ -10,6 +11,7 @@ class TaskItem extends StatelessWidget {
   final Duration? customDuration;
   final String? durationLabel;
   final bool isExpanded;
+  final String? shortcutLabel;
   final VoidCallback onToggleExpand;
   final VoidCallback onStartTracking;
   final VoidCallback onEdit;
@@ -25,6 +27,7 @@ class TaskItem extends StatelessWidget {
     this.customDuration,
     this.durationLabel,
     this.isExpanded = false,
+    this.shortcutLabel,
     required this.onToggleExpand,
     required this.onStartTracking,
     required this.onEdit,
@@ -89,10 +92,21 @@ class TaskItem extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          task.title,
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                          overflow: TextOverflow.ellipsis,
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                task.title,
+                                style: const TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.w600),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (shortcutLabel != null) ...[
+                              const SizedBox(width: 8),
+                              ShortcutBadge(label: shortcutLabel!, isLight: true),
+                            ],
+                          ],
                         ),
                         if (task.description.isNotEmpty)
                           Text(

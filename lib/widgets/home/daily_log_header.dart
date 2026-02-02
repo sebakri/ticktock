@@ -52,22 +52,40 @@ class DailyLogHeader extends StatelessWidget {
                 onPressed: onNextDay,
               ),
               const SizedBox(width: 16),
-              TextButton(
+              ElevatedButton(
                 onPressed: onToday,
-                child: const Text(
-                  'Today',
-                  style: TextStyle(color: Color(0xFF818CF8)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF818CF8).withOpacity(0.1),
+                  foregroundColor: const Color(0xFF818CF8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
                 ),
+                child: const Text('Today',
+                    style:
+                        TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
               ),
               const SizedBox(
                 height: 24,
                 child: VerticalDivider(color: Colors.white24, width: 32),
               ),
-              TextButton.icon(
+              ElevatedButton.icon(
                 onPressed: onJumpToDate,
                 icon: const Icon(Icons.calendar_today, size: 16),
-                label: const Text('Jump to date'),
-                style: TextButton.styleFrom(foregroundColor: Colors.white),
+                label: const Text('Jump to date',
+                    style:
+                        TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white.withOpacity(0.05),
+                  foregroundColor: Colors.white,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ),
               ),
             ],
           ),
