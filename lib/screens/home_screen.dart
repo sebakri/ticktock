@@ -139,42 +139,60 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
     );
   }
 
-  void _toggleTracking() async {
+  void _onStartTracking(String title) async {
+    // If we are tracking something else, stop it first
+    if (_isTracking && _taskController.text.trim() != title) {
+      await _stopTracking();
+    }
+
+    // Update the controller with the new task title
+    _taskController.text = title;
+    await _toggleTracking();
+  }
+
+  Future<void> _stopTracking() async {
+    final title = _taskController.text.trim();
+    if (title.isEmpty) return;
+
+    final endTime = DateTime.now();
+    final existingTaskIndex = _tasks.indexWhere((t) => t.title == title);
+
+    if (existingTaskIndex != -1) {
+      final task = _tasks[existingTaskIndex];
+      final block = TimeBlock(
+        taskId: task.id,
+        startTime: _trackingStartTime!,
+        endTime: endTime,
+      );
+      await DatabaseService.instance.createTimeBlock(block);
+    } else {
+      final newTask = Task(title: title, color: _getNextColor());
+      final taskId = await DatabaseService.instance.createTask(newTask);
+      final block = TimeBlock(
+        taskId: taskId,
+        startTime: _trackingStartTime!,
+        endTime: endTime,
+      );
+      await DatabaseService.instance.createTimeBlock(block);
+    }
+
+    await DatabaseService.instance.clearTrackingState();
+
+    setState(() {
+      _isTracking = false;
+      _trackingStartTime = null;
+      _taskController.clear();
+      _ticker?.cancel();
+    });
+    _refreshTasks();
+  }
+
+  Future<void> _toggleTracking() async {
     final title = _taskController.text.trim();
     if (title.isEmpty) return;
 
     if (_isTracking) {
-      final endTime = DateTime.now();
-      final existingTaskIndex = _tasks.indexWhere((t) => t.title == title);
-
-      if (existingTaskIndex != -1) {
-        final task = _tasks[existingTaskIndex];
-        final block = TimeBlock(
-          taskId: task.id,
-          startTime: _trackingStartTime!,
-          endTime: endTime,
-        );
-        await DatabaseService.instance.createTimeBlock(block);
-      } else {
-        final newTask = Task(title: title, color: _getNextColor());
-        final taskId = await DatabaseService.instance.createTask(newTask);
-        final block = TimeBlock(
-          taskId: taskId,
-          startTime: _trackingStartTime!,
-          endTime: endTime,
-        );
-        await DatabaseService.instance.createTimeBlock(block);
-      }
-
-      await DatabaseService.instance.clearTrackingState();
-
-      setState(() {
-        _isTracking = false;
-        _trackingStartTime = null;
-        _taskController.clear();
-        _ticker?.cancel();
-      });
-      _refreshTasks();
+      await _stopTracking();
     } else {
       final existingTaskIndex = _tasks.indexWhere((t) => t.title == title);
       if (existingTaskIndex == -1) {
@@ -442,10 +460,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                                     onToggleExpand: () => setState(
                                       () => task.isExpanded = !task.isExpanded,
                                     ),
-                                    onStartTracking: () {
-                                      _taskController.text = task.title;
-                                      _toggleTracking();
-                                    },
+                                    onStartTracking: () => _onStartTracking(task.title),
                                     onEdit: () => _editTask(task),
                                     onDelete: () => _deleteTask(task),
                                     onEditBlock: (block) =>
