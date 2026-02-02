@@ -265,7 +265,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
               alignment: Alignment.center,
               child: Text(
                 'TickTock',
-                style: GoogleFonts.zain(
+                style: GoogleFonts.fascinate(
                   fontSize: 22,
                   color: const Color(0xFF818CF8),
                 ),
