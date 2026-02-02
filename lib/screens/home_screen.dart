@@ -95,17 +95,6 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
 
   Future _refreshTasks() async {
     final tasks = await DatabaseService.instance.getTasks();
-    
-    // Sort tasks: if tracking, active task comes first.
-    if (_isTracking) {
-      final activeTitle = _taskController.text.trim();
-      final activeIndex = tasks.indexWhere((t) => t.title == activeTitle);
-      if (activeIndex != -1) {
-        final activeTask = tasks.removeAt(activeIndex);
-        tasks.insert(0, activeTask);
-      }
-    }
-    
     setState(() {
       _tasks = tasks;
       _isLoading = false;
