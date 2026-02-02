@@ -21,9 +21,22 @@ class DatabaseService {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _createDB,
+      onUpgrade: _onUpgrade,
     );
+  }
+
+  Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('''
+        CREATE TABLE tracking_state (
+          id INTEGER PRIMARY KEY,
+          title TEXT,
+          start_time TEXT
+        )
+      ''');
+    }
   }
 
   Future _createDB(Database db, int version) async {
@@ -46,6 +59,49 @@ class DatabaseService {
         FOREIGN KEY (task_id) REFERENCES tasks (id) ON DELETE CASCADE
       )
     ''');
+
+    await db.execute('''
+      CREATE TABLE tracking_state (
+        id INTEGER PRIMARY KEY,
+        title TEXT,
+        start_time TEXT
+      )
+    ''');
+  }
+
+  Future<void> saveTrackingState(String title, DateTime startTime) async {
+    final db = await instance.database;
+    await db.insert(
+      'tracking_state',
+      {
+        'id': 1,
+        'title': title,
+        'start_time': startTime.toIso8601String(),
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<Map<String, dynamic>?> getTrackingState() async {
+    final db = await instance.database;
+    final maps = await db.query(
+      'tracking_state',
+      where: 'id = ?',
+      whereArgs: [1],
+    );
+    if (maps.isNotEmpty) {
+      return maps.first;
+    }
+    return null;
+  }
+
+  Future<void> clearTrackingState() async {
+    final db = await instance.database;
+    await db.delete(
+      'tracking_state',
+      where: 'id = ?',
+      whereArgs: [1],
+    );
   }
 
   Future<int> createTask(Task task) async {

@@ -48,8 +48,27 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
   void initState() {
     super.initState();
     windowManager.addListener(this);
-    _selectedDate = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    _selectedDate = DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+    );
     _refreshTasks();
+    _loadTrackingState();
+  }
+
+  Future<void> _loadTrackingState() async {
+    final state = await DatabaseService.instance.getTrackingState();
+    if (state != null) {
+      setState(() {
+        _taskController.text = state['title'];
+        _trackingStartTime = DateTime.parse(state['start_time']);
+        _isTracking = true;
+        _ticker = Timer.periodic(const Duration(seconds: 1), (timer) {
+          setState(() {});
+        });
+      });
+    }
   }
 
   @override
@@ -66,7 +85,6 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
   }
 
   Future _refreshTasks() async {
-    setState(() => _isLoading = true);
     _tasks = await DatabaseService.instance.getTasks();
     setState(() => _isLoading = false);
   }
@@ -92,10 +110,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
         );
         await DatabaseService.instance.createTimeBlock(block);
       } else {
-        final newTask = Task(
-          title: title,
-          color: _getNextColor(),
-        );
+        final newTask = Task(title: title, color: _getNextColor());
         final taskId = await DatabaseService.instance.createTask(newTask);
         final block = TimeBlock(
           taskId: taskId,
@@ -104,7 +119,9 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
         );
         await DatabaseService.instance.createTimeBlock(block);
       }
-      
+
+      await DatabaseService.instance.clearTrackingState();
+
       setState(() {
         _isTracking = false;
         _trackingStartTime = null;
@@ -113,11 +130,23 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
       });
       _refreshTasks();
     } else {
+      final existingTaskIndex = _tasks.indexWhere((t) => t.title == title);
+      if (existingTaskIndex == -1) {
+        final newTask = Task(title: title, color: _getNextColor());
+        await DatabaseService.instance.createTask(newTask);
+        await _refreshTasks();
+      }
+
+      final startTime = DateTime.now();
+      await DatabaseService.instance.saveTrackingState(title, startTime);
+
       setState(() {
         _isTracking = true;
-        _trackingStartTime = DateTime.now();
+        _trackingStartTime = startTime;
         final now = DateTime.now();
-        if (_selectedDate.year != now.year || _selectedDate.month != now.month || _selectedDate.day != now.day) {
+        if (_selectedDate.year != now.year ||
+            _selectedDate.month != now.month ||
+            _selectedDate.day != now.day) {
           _selectedDate = DateTime(now.year, now.month, now.day);
         }
         _ticker = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -128,8 +157,13 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
   }
 
   void _editTask(Task task) {
-    final usedColors = _tasks.where((t) => t != task).map((t) => t.color).toSet();
-    final availablePalette = _palette.where((color) => !usedColors.contains(color) || color == task.color).toList();
+    final usedColors = _tasks
+        .where((t) => t != task)
+        .map((t) => t.color)
+        .toSet();
+    final availablePalette = _palette
+        .where((color) => !usedColors.contains(color) || color == task.color)
+        .toList();
 
     showDialog(
       context: context,
@@ -200,96 +234,109 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
             ),
           ),
           Expanded(
-            child: _isLoading 
-              ? const Center(child: CircularProgressIndicator())
-              : Padding(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                child: CustomScrollView(
-                  slivers: [
-                    SliverToBoxAdapter(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 8),
-                          DailyLogHeader(
-                            selectedDate: _selectedDate,
-                            onPrevDay: () {
-                              setState(() {
-                                _selectedDate = _selectedDate.subtract(const Duration(days: 1));
-                              });
-                            },
-                            onNextDay: () {
-                              setState(() {
-                                _selectedDate = _selectedDate.add(const Duration(days: 1));
-                              });
-                            },
-                            onToday: () {
-                              setState(() {
-                                final now = DateTime.now();
-                                _selectedDate = DateTime(now.year, now.month, now.day);
-                              });
-                            },
-                            onJumpToDate: () async {
-                              final DateTime? picked = await showDatePicker(
-                                context: context,
-                                initialDate: _selectedDate,
-                                firstDate: DateTime(2020),
-                                lastDate: DateTime(2101),
-                              );
-                              if (picked != null && picked != _selectedDate) {
-                                setState(() {
-                                  _selectedDate = picked;
-                                });
-                              }
-                            },
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                    child: CustomScrollView(
+                      slivers: [
+                        SliverToBoxAdapter(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 8),
+                              DailyLogHeader(
+                                selectedDate: _selectedDate,
+                                onPrevDay: () {
+                                  setState(() {
+                                    _selectedDate = _selectedDate.subtract(
+                                      const Duration(days: 1),
+                                    );
+                                  });
+                                },
+                                onNextDay: () {
+                                  setState(() {
+                                    _selectedDate = _selectedDate.add(
+                                      const Duration(days: 1),
+                                    );
+                                  });
+                                },
+                                onToday: () {
+                                  setState(() {
+                                    final now = DateTime.now();
+                                    _selectedDate = DateTime(
+                                      now.year,
+                                      now.month,
+                                      now.day,
+                                    );
+                                  });
+                                },
+                                onJumpToDate: () async {
+                                  final DateTime? picked = await showDatePicker(
+                                    context: context,
+                                    initialDate: _selectedDate,
+                                    firstDate: DateTime(2020),
+                                    lastDate: DateTime(2101),
+                                  );
+                                  if (picked != null &&
+                                      picked != _selectedDate) {
+                                    setState(() {
+                                      _selectedDate = picked;
+                                    });
+                                  }
+                                },
+                              ),
+                              const SizedBox(height: 24),
+                              DayTimeline(
+                                selectedDate: _selectedDate,
+                                tasks: _tasks,
+                                isTracking: _isTracking,
+                                trackingStartTime: _trackingStartTime,
+                                trackingTaskTitle: _taskController.text.trim(),
+                                palette: _palette,
+                              ),
+                              const SizedBox(height: 24),
+                              QuickInput(
+                                controller: _taskController,
+                                isTracking: _isTracking,
+                                onToggleTracking: _toggleTracking,
+                              ),
+                              const SizedBox(height: 24),
+                              _buildTaskListHeader(),
+                              const SizedBox(height: 12),
+                            ],
                           ),
-                          const SizedBox(height: 24),
-                          DayTimeline(
-                            selectedDate: _selectedDate,
-                            tasks: _tasks,
-                            isTracking: _isTracking,
-                            trackingStartTime: _trackingStartTime,
-                            trackingTaskTitle: _taskController.text.trim(),
-                            palette: _palette,
-                          ),
-                          const SizedBox(height: 24),
-                          QuickInput(
-                            controller: _taskController,
-                            isTracking: _isTracking,
-                            onToggleTracking: _toggleTracking,
-                          ),
-                          const SizedBox(height: 24),
-                          _buildTaskListHeader(),
-                          const SizedBox(height: 12),
-                        ],
-                      ),
+                        ),
+                        SliverList(
+                          delegate: SliverChildBuilderDelegate((
+                            context,
+                            index,
+                          ) {
+                            final task = _tasks[index];
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: TaskItem(
+                                task: task,
+                                onToggleExpand: () => setState(
+                                  () => task.isExpanded = !task.isExpanded,
+                                ),
+                                onStartTracking: () {
+                                  _taskController.text = task.title;
+                                  _toggleTracking();
+                                },
+                                onEdit: () => _editTask(task),
+                                onDelete: () => _deleteTask(task),
+                                onEditBlock: (block) =>
+                                    _editTimeBlock(task, block),
+                                onDeleteBlock: (blockIndex) =>
+                                    _deleteTimeBlock(task, blockIndex),
+                              ),
+                            );
+                          }, childCount: _tasks.length),
+                        ),
+                      ],
                     ),
-                    SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final task = _tasks[index];
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: TaskItem(
-                              task: task,
-                              onToggleExpand: () => setState(() => task.isExpanded = !task.isExpanded),
-                              onStartTracking: () {
-                                _taskController.text = task.title;
-                                _toggleTracking();
-                              },
-                              onEdit: () => _editTask(task),
-                              onDelete: () => _deleteTask(task),
-                              onEditBlock: (block) => _editTimeBlock(task, block),
-                              onDeleteBlock: (blockIndex) => _deleteTimeBlock(task, blockIndex),
-                            ),
-                          );
-                        },
-                        childCount: _tasks.length,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                  ),
           ),
         ],
       ),
@@ -297,8 +344,12 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
   }
 
   Widget _buildTaskListHeader() {
-    final totalDuration = _tasks.fold(Duration.zero, (prev, task) => prev + task.totalDuration);
-    final totalTimeStr = '${totalDuration.inHours}h ${totalDuration.inMinutes % 60}m total';
+    final totalDuration = _tasks.fold(
+      Duration.zero,
+      (prev, task) => prev + task.totalDuration,
+    );
+    final totalTimeStr =
+        '${totalDuration.inHours}h ${totalDuration.inMinutes % 60}m total';
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -307,10 +358,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
           'Tasks',
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
-        Text(
-          totalTimeStr,
-          style: TextStyle(color: Colors.grey[400]),
-        ),
+        Text(totalTimeStr, style: TextStyle(color: Colors.grey[400])),
       ],
     );
   }
