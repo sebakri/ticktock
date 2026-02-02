@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:hotkey_manager/hotkey_manager.dart';
 import '../models/task.dart';
 import '../models/time_block.dart';
 import '../widgets/edit_task_dialog.dart';
@@ -11,6 +13,22 @@ import '../widgets/home/daily_log_header.dart';
 import '../widgets/home/day_timeline.dart';
 import '../widgets/home/task_item.dart';
 import '../services/database_service.dart';
+
+class AddTaskIntent extends Intent {
+  const AddTaskIntent();
+}
+
+class FocusSearchIntent extends Intent {
+  const FocusSearchIntent();
+}
+
+class ToggleTrackingIntent extends Intent {
+  const ToggleTrackingIntent();
+}
+
+class ClearSearchIntent extends Intent {
+  const ClearSearchIntent();
+}
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -22,6 +40,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with WindowListener {
   final TextEditingController _taskController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+  final FocusNode _mainFocusNode = FocusNode();
   bool _isTracking = false;
   DateTime? _trackingStartTime;
   Timer? _ticker;
@@ -62,6 +82,50 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
         _searchQuery = _searchController.text.trim().toLowerCase();
       });
     });
+    _registerGlobalHotkeys();
+  }
+
+  Future<void> _registerGlobalHotkeys() async {
+    // Option + Space: Toggle Visibility
+    HotKey toggleVisibleHotKey = HotKey(
+      key: LogicalKeyboardKey.space,
+      modifiers: [HotKeyModifier.alt],
+      scope: HotKeyScope.system,
+    );
+    await hotKeyManager.register(
+      toggleVisibleHotKey,
+      keyDownHandler: (hotKey) async {
+        bool isVisible = await windowManager.isVisible();
+        if (isVisible) {
+          await windowManager.hide();
+        } else {
+          await windowManager.show();
+          await windowManager.focus();
+        }
+      },
+    );
+
+    // Option + S: Toggle Tracking
+    HotKey toggleTrackingHotKey = HotKey(
+      key: LogicalKeyboardKey.keyS,
+      modifiers: [HotKeyModifier.alt],
+      scope: HotKeyScope.system,
+    );
+    await hotKeyManager.register(
+      toggleTrackingHotKey,
+      keyDownHandler: (hotKey) {
+        _handleGlobalToggleTracking();
+      },
+    );
+  }
+
+  void _handleGlobalToggleTracking() {
+    if (_isTracking) {
+      _stopTracking();
+    } else if (_tasks.isNotEmpty) {
+      // Start the first task as a default global action
+      _startTracking(_tasks.first.title);
+    }
   }
 
   Future<void> _loadTrackingState() async {
@@ -82,9 +146,12 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
   @override
   void dispose() {
     windowManager.removeListener(this);
+    hotKeyManager.unregisterAll();
     _ticker?.cancel();
     _taskController.dispose();
     _searchController.dispose();
+    _searchFocusNode.dispose();
+    _mainFocusNode.dispose();
     super.dispose();
   }
 
@@ -258,24 +325,68 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
-      body: Column(
-        children: [
-          DragToMoveArea(
-            child: Container(
-              height: 60,
-              width: double.infinity,
-              alignment: Alignment.center,
-              child: Text(
-                'TickTock',
-                style: GoogleFonts.fascinate(
-                  fontSize: 36,
-                  color: const Color(0xFF818CF8),
-                ),
-              ),
-            ),
+    return Shortcuts(
+      shortcuts: {
+        const SingleActivator(LogicalKeyboardKey.keyN, meta: true):
+            const AddTaskIntent(),
+        const SingleActivator(LogicalKeyboardKey.keyF, meta: true):
+            const FocusSearchIntent(),
+        const SingleActivator(LogicalKeyboardKey.keyS, meta: true):
+            const ToggleTrackingIntent(),
+        const SingleActivator(LogicalKeyboardKey.escape):
+            const ClearSearchIntent(),
+      },
+      child: Actions(
+        actions: {
+          AddTaskIntent: CallbackAction<AddTaskIntent>(
+            onInvoke: (intent) => _addNewTask(),
           ),
+          FocusSearchIntent: CallbackAction<FocusSearchIntent>(
+            onInvoke: (intent) => _searchFocusNode.requestFocus(),
+          ),
+          ToggleTrackingIntent: CallbackAction<ToggleTrackingIntent>(
+            onInvoke: (intent) {
+              try {
+                if (_isTracking) {
+                  _stopTracking();
+                } else if (_tasks.isNotEmpty) {
+                  _startTracking(_tasks.first.title);
+                }
+              } catch (e) {
+                debugPrint('Error toggling tracking via shortcut: $e');
+              }
+              return null;
+            },
+          ),
+          ClearSearchIntent: CallbackAction<ClearSearchIntent>(
+            onInvoke: (intent) {
+              _searchController.clear();
+              _mainFocusNode.requestFocus();
+              return null;
+            },
+          ),
+        },
+        child: Focus(
+          focusNode: _mainFocusNode,
+          autofocus: true,
+          child: Scaffold(
+            backgroundColor: const Color(0xFF0F172A),
+            body: Column(
+              children: [
+                DragToMoveArea(
+                  child: Container(
+                    height: 60,
+                    width: double.infinity,
+                    alignment: Alignment.center,
+                    child: Text(
+                      'TickTock',
+                      style: GoogleFonts.fascinate(
+                        fontSize: 36,
+                        color: const Color(0xFF818CF8),
+                      ),
+                    ),
+                  ),
+                ),
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -506,8 +617,11 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                       );
                     }),
                   ),
+                ),
+              ],
+            ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -554,6 +668,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                   ),
                   child: TextField(
                     controller: _searchController,
+                    focusNode: _searchFocusNode,
                     style: const TextStyle(fontSize: 14),
                     textAlignVertical: TextAlignVertical.center,
                     decoration: InputDecoration(
