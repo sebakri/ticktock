@@ -4,6 +4,11 @@ import 'package:ticktock/widgets/add_task_dialog.dart';
 
 void main() {
   testWidgets('AddTaskDialog validation and color filtering', (WidgetTester tester) async {
+    // Set physical size to match the actual running application (633x1410)
+    tester.view.physicalSize = const Size(633, 1410);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
     String? savedTitle;
     String? savedDesc;
     Color? savedColor;

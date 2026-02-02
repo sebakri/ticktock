@@ -27,11 +27,12 @@ class DayTimeline extends StatelessWidget {
         Container(
           height: 32,
           decoration: BoxDecoration(
-            color: const Color(0xFF1E293B),
-            borderRadius: BorderRadius.circular(8),
+            color: Colors.white.withOpacity(0.03),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withOpacity(0.05)),
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
             child: _buildDayTimelineBars(),
           ),
         ),
@@ -41,7 +42,12 @@ class DayTimeline extends StatelessWidget {
           children: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '23:59']
               .map((time) => Text(
                     time,
-                    style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.2),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'monospace',
+                    ),
                   ))
               .toList(),
         ),

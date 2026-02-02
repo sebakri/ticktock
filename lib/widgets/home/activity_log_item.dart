@@ -225,11 +225,13 @@ class ActivityLogItem extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           IconButton(
-            icon: const Icon(Icons.edit_outlined, size: 14, color: Colors.white10),
+            icon:
+                const Icon(Icons.edit_outlined, size: 14, color: Colors.white30),
             onPressed: () => onEditBlock(block),
           ),
           IconButton(
-            icon: const Icon(Icons.delete_outline, size: 14, color: Colors.white10),
+            icon:
+                const Icon(Icons.delete_outline, size: 14, color: Colors.white30),
             onPressed: () => onDeleteBlock(index),
           ),
         ],

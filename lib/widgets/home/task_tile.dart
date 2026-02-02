@@ -27,7 +27,7 @@ class TaskTile extends StatelessWidget {
       child: Container(
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
+          color: Colors.white.withOpacity(0.03),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isTracking ? task.color : Colors.white.withOpacity(0.05),
@@ -91,6 +91,18 @@ class TaskTile extends StatelessWidget {
                       ],
                     ],
                   ),
+                  if (task.description.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      task.description,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.white.withOpacity(0.25),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                   const Spacer(),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,

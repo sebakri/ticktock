@@ -929,11 +929,13 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
         ElevatedButton(
           onPressed: _addNewTask,
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF4F46E5),
-            foregroundColor: Colors.white,
+            backgroundColor: const Color(0xFF4F46E5).withOpacity(0.1),
+            foregroundColor: const Color(0xFF4F46E5),
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: const Color(0xFF4F46E5).withOpacity(0.2)),
+            ),
             elevation: 0,
           ),
           child: const Row(

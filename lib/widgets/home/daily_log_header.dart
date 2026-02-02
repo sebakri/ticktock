@@ -94,148 +94,172 @@ class DailyLogHeader extends StatelessWidget {
 
             // 4. Today Button
 
-            _buildActionButton(
+                      _buildActionButton(
 
-              label: 'Today',
+                        label: 'Today',
 
-              shortcut: '⌘T',
+                        shortcut: '⌘T',
 
-              onPressed: onToday,
+                        onPressed: onToday,
 
-            ),
+                        color: const Color(0xFF4F46E5),
 
-            const SizedBox(width: 12),
+                      ),
 
-            // 5. Jump Button
+                      const SizedBox(width: 12),
 
-            _buildActionButton(
+                      // 5. Jump Button
 
-              label: 'Jump',
+                      _buildActionButton(
 
-              shortcut: '⌘D',
+                        label: 'Jump',
 
-              onPressed: onJumpToDate,
+                        shortcut: '⌘D',
 
-              icon: Icons.calendar_today_rounded,
+                        onPressed: onJumpToDate,
 
-            ),
+                        icon: Icons.calendar_today_rounded,
 
-          ],
+                        color: const Color(0xFF4F46E5),
 
-        ),
+                      ),
 
-      );
-
-    }
-
-  
-
-    Widget _buildNavButton(IconData icon, VoidCallback onPressed) {
-
-      return Container(
-
-        decoration: BoxDecoration(
-
-          color: Colors.white.withOpacity(0.03),
-
-          borderRadius: BorderRadius.circular(8),
-
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
-
-        ),
-
-        child: IconButton(
-
-          icon: Icon(icon, size: 20, color: Colors.white70),
-
-          onPressed: onPressed,
-
-          visualDensity: VisualDensity.compact,
-
-        ),
-
-      );
-
-    }
-
-  
-
-    Widget _buildActionButton({
-
-      required String label,
-
-      required String shortcut,
-
-      required VoidCallback onPressed,
-
-      IconData? icon,
-
-    }) {
-
-      return TextButton(
-
-        onPressed: onPressed,
-
-        style: TextButton.styleFrom(
-
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-
-          backgroundColor: Colors.white.withOpacity(0.03),
-
-                  shape: RoundedRectangleBorder(
-
-                    borderRadius: BorderRadius.circular(10),
-
-                    side: BorderSide(color: Colors.white.withOpacity(0.05)),
+                    ],
 
                   ),
 
-          
+                );
 
-        ),
+              }
 
-        child: Row(
+            
 
-          mainAxisSize: MainAxisSize.min,
+              Widget _buildNavButton(IconData icon, VoidCallback onPressed) {
 
-          children: [
+                return Container(
 
-            if (icon != null) ...[
+                  decoration: BoxDecoration(
 
-              Icon(icon, size: 14, color: Colors.white60),
+                    color: Colors.white.withOpacity(0.03),
 
-              const SizedBox(width: 6),
+                    borderRadius: BorderRadius.circular(8),
 
-            ],
+                    border: Border.all(color: Colors.white.withOpacity(0.05)),
 
-            Text(
+                  ),
 
-              label,
+                  child: IconButton(
 
-              style: const TextStyle(
+                    icon: Icon(icon, size: 20, color: Colors.white70),
 
-                color: Colors.white70,
+                    onPressed: onPressed,
 
-                fontSize: 13,
+                    visualDensity: VisualDensity.compact,
 
-                fontWeight: FontWeight.w600,
+                  ),
 
-              ),
+                );
 
-            ),
+              }
 
-            const SizedBox(width: 8),
+            
 
-            ShortcutBadge(label: shortcut, isLight: true, fontSize: 10),
+              Widget _buildActionButton({
 
-          ],
+                required String label,
 
-        ),
+                required String shortcut,
 
-      );
+                required VoidCallback onPressed,
 
-    }
+                IconData? icon,
 
-  }
+                Color? color,
+
+              }) {
+
+                final themeColor = color ?? Colors.white;
+
+                final isIndigo = color != null;
+
+            
+
+                return TextButton(
+
+                  onPressed: onPressed,
+
+                  style: TextButton.styleFrom(
+
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+
+                    backgroundColor: isIndigo
+
+                        ? themeColor.withOpacity(0.1)
+
+                        : Colors.white.withOpacity(0.03),
+
+                    shape: RoundedRectangleBorder(
+
+                      borderRadius: BorderRadius.circular(10),
+
+                      side: BorderSide(
+
+                        color: isIndigo
+
+                            ? themeColor.withOpacity(0.2)
+
+                            : Colors.white.withOpacity(0.05),
+
+                      ),
+
+                    ),
+
+                  ),
+
+                  child: Row(
+
+                    mainAxisSize: MainAxisSize.min,
+
+                    children: [
+
+                      if (icon != null) ...[
+
+                        Icon(icon, size: 14, color: isIndigo ? themeColor : Colors.white60),
+
+                        const SizedBox(width: 6),
+
+                      ],
+
+                      Text(
+
+                        label,
+
+                        style: TextStyle(
+
+                          color: isIndigo ? themeColor : Colors.white70,
+
+                          fontSize: 13,
+
+                          fontWeight: FontWeight.w600,
+
+                        ),
+
+                      ),
+
+                      const SizedBox(width: 8),
+
+                      ShortcutBadge(label: shortcut, isLight: true, fontSize: 10),
+
+                    ],
+
+                  ),
+
+                );
+
+              }
+
+            }
+
+            
 
   
