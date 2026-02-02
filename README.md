@@ -53,15 +53,15 @@ flutter run -d macos
 
 ## Releasing
 
-TickTock uses GitHub Actions for automated releases. To create a new release:
+TickTock uses **Conventional Commits** and **Release Please** for automated versioning and releases.
 
-1. Update the version in `pubspec.yaml`.
-2. Create and push a new git tag:
-   ```bash
-   git tag v1.0.0
-   git push origin v1.0.0
-   ```
-3. GitHub Actions will automatically build the macOS application, package it into a DMG, and create a new Release on GitHub.
+1.  Commit your changes using conventional commit messages (e.g., `feat: add new feature`, `fix: resolve bug`).
+2.  When you push to `main`, a "Release PR" will be automatically created or updated.
+3.  Merging the Release PR will:
+    *   Bump the version in `pubspec.yaml`.
+    *   Generate a `CHANGELOG.md` entry.
+    *   Create a GitHub Release and a git tag.
+    *   Trigger a build and upload the macOS DMG.
 
 ---
 

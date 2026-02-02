@@ -1,12 +1,29 @@
-name: Build and Release
+name: Release Please
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
-  build-macos:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - uses: google-github-actions/release-please-action@v4
+        id: release
+        with:
+          release-type: dart
+
+  build-and-release:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created }}
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -29,9 +46,7 @@ jobs:
           ln -s /Applications build/macos/dmg/Applications
           hdiutil create -volname "TickTock" -srcfolder build/macos/dmg -ov -format UDZO ticktock.dmg
           
-      - name: Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: ticktock.dmg
+      - name: Upload Release Artifact
+        run: gh release upload ${{ needs.release-please.outputs.tag_name }} ticktock.dmg
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
