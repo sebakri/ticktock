@@ -5,6 +5,8 @@ import '../../models/time_block.dart';
 
 class TaskItem extends StatelessWidget {
   final Task task;
+  final bool isTracking;
+  final Duration activeDuration;
   final VoidCallback onToggleExpand;
   final VoidCallback onStartTracking;
   final VoidCallback onEdit;
@@ -15,6 +17,8 @@ class TaskItem extends StatelessWidget {
   const TaskItem({
     super.key,
     required this.task,
+    this.isTracking = false,
+    this.activeDuration = Duration.zero,
     required this.onToggleExpand,
     required this.onStartTracking,
     required this.onEdit,
@@ -25,8 +29,9 @@ class TaskItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final duration = task.totalDuration;
-    final durationStr = '${duration.inHours}:${(duration.inMinutes % 60).toString().padLeft(2, '0')}';
+    final duration = task.totalDuration + activeDuration;
+    final durationStr =
+        '${duration.inHours}:${(duration.inMinutes % 60).toString().padLeft(2, '0')}';
 
     return Container(
       decoration: BoxDecoration(
@@ -97,11 +102,16 @@ class TaskItem extends StatelessWidget {
                   const SizedBox(width: 12),
                   Text(
                     durationStr,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: isTracking ? task.color : Colors.white,
+                    ),
                   ),
                   const SizedBox(width: 24),
                   IconButton(
-                    icon: const Icon(Icons.play_arrow, size: 20),
+                    icon: Icon(isTracking ? Icons.stop : Icons.play_arrow,
+                        size: 20, color: isTracking ? Colors.redAccent : null),
                     onPressed: onStartTracking,
                   ),
                   IconButton(

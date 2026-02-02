@@ -5,10 +5,10 @@ import 'package:window_manager/window_manager.dart';
 import '../models/task.dart';
 import '../models/time_block.dart';
 import '../widgets/edit_task_dialog.dart';
+import '../widgets/add_task_dialog.dart';
 import '../widgets/edit_session_dialog.dart';
 import '../widgets/home/daily_log_header.dart';
 import '../widgets/home/day_timeline.dart';
-import '../widgets/home/quick_input.dart';
 import '../widgets/home/task_item.dart';
 import '../services/database_service.dart';
 
@@ -68,6 +68,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
           setState(() {});
         });
       });
+      _refreshTasks();
     }
   }
 
@@ -85,12 +86,49 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
   }
 
   Future _refreshTasks() async {
-    _tasks = await DatabaseService.instance.getTasks();
-    setState(() => _isLoading = false);
+    final tasks = await DatabaseService.instance.getTasks();
+    
+    // Sort tasks: if tracking, active task comes first.
+    if (_isTracking) {
+      final activeTitle = _taskController.text.trim();
+      final activeIndex = tasks.indexWhere((t) => t.title == activeTitle);
+      if (activeIndex != -1) {
+        final activeTask = tasks.removeAt(activeIndex);
+        tasks.insert(0, activeTask);
+      }
+    }
+    
+    setState(() {
+      _tasks = tasks;
+      _isLoading = false;
+    });
   }
 
   Color _getNextColor() {
     return _palette[_tasks.length % _palette.length];
+  }
+
+  void _addNewTask() {
+    final usedColors = _tasks.map((t) => t.color).toSet();
+    final availablePalette = _palette.where((color) => !usedColors.contains(color)).toList();
+    final existingTitles = _tasks.map((t) => t.title.toLowerCase()).toList();
+
+    showDialog(
+      context: context,
+      builder: (context) => AddTaskDialog(
+        palette: availablePalette.isEmpty ? _palette : availablePalette,
+        existingTitles: existingTitles,
+        onSave: (title, description, color) async {
+          final newTask = Task(
+            title: title,
+            description: description,
+            color: color,
+          );
+          await DatabaseService.instance.createTask(newTask);
+          _refreshTasks();
+        },
+      ),
+    );
   }
 
   void _toggleTracking() async {
@@ -153,6 +191,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
           setState(() {});
         });
       });
+      _refreshTasks();
     }
   }
 
@@ -296,12 +335,6 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                                 palette: _palette,
                               ),
                               const SizedBox(height: 24),
-                              QuickInput(
-                                controller: _taskController,
-                                isTracking: _isTracking,
-                                onToggleTracking: _toggleTracking,
-                              ),
-                              const SizedBox(height: 24),
                               _buildTaskListHeader(),
                               const SizedBox(height: 12),
                             ],
@@ -313,10 +346,19 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                             index,
                           ) {
                             final task = _tasks[index];
+                            final isTrackingThisTask = _isTracking &&
+                                _taskController.text.trim() == task.title;
+                            final activeDuration = isTrackingThisTask &&
+                                    _trackingStartTime != null
+                                ? DateTime.now().difference(_trackingStartTime!)
+                                : Duration.zero;
+
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 12),
                               child: TaskItem(
                                 task: task,
+                                isTracking: isTrackingThisTask,
+                                activeDuration: activeDuration,
                                 onToggleExpand: () => setState(
                                   () => task.isExpanded = !task.isExpanded,
                                 ),
@@ -354,9 +396,19 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Text(
-          'Tasks',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        Row(
+          children: [
+            const Text(
+              'Tasks',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              onPressed: _addNewTask,
+              icon: const Icon(Icons.add_circle_outline, color: Color(0xFF818CF8)),
+              tooltip: 'Add New Task',
+            ),
+          ],
         ),
         Text(totalTimeStr, style: TextStyle(color: Colors.grey[400])),
       ],
