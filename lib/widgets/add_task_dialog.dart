@@ -31,18 +31,15 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
 
   void _validate() {
     final title = _nameController.text.trim().toLowerCase();
-    if (title.isEmpty) {
-      if (_errorMessage != null) setState(() => _errorMessage = null);
-      return;
+    String? newError;
+
+    if (title.isNotEmpty && widget.existingTitles.contains(title)) {
+      newError = 'A task with this name already exists';
     }
 
-    if (widget.existingTitles.contains(title)) {
-      if (_errorMessage == null) {
-        setState(() => _errorMessage = 'A task with this name already exists');
-      }
-    } else {
-      if (_errorMessage != null) setState(() => _errorMessage = null);
-    }
+    setState(() {
+      _errorMessage = newError;
+    });
   }
 
   @override
