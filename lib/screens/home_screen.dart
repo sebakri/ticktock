@@ -140,19 +140,50 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
   }
 
   void _onStartTracking(String title) async {
-    // If we are tracking something else, stop it first
-    if (_isTracking && _taskController.text.trim() != title) {
+    if (_isTracking && _taskController.text.trim() == title) {
+      await _stopTracking();
+    } else {
+      await _startTracking(title);
+    }
+  }
+
+  Future<void> _startTracking(String title) async {
+    if (_isTracking) {
       await _stopTracking();
     }
 
-    // Update the controller with the new task title
+    // Ensure the task exists
+    final existingTaskIndex = _tasks.indexWhere((t) => t.title == title);
+    if (existingTaskIndex == -1) {
+      final newTask = Task(title: title, color: _getNextColor());
+      await DatabaseService.instance.createTask(newTask);
+      await _refreshTasks();
+    }
+
+    final startTime = DateTime.now();
+    await DatabaseService.instance.saveTrackingState(title, startTime);
+
     _taskController.text = title;
-    await _toggleTracking();
+    setState(() {
+      _isTracking = true;
+      _trackingStartTime = startTime;
+      final now = DateTime.now();
+      if (_selectedDate.year != now.year ||
+          _selectedDate.month != now.month ||
+          _selectedDate.day != now.day) {
+        _selectedDate = DateTime(now.year, now.month, now.day);
+      }
+      _ticker?.cancel();
+      _ticker = Timer.periodic(const Duration(seconds: 1), (timer) {
+        setState(() {});
+      });
+    });
+    _refreshTasks();
   }
 
   Future<void> _stopTracking() async {
     final title = _taskController.text.trim();
-    if (title.isEmpty) return;
+    if (title.isEmpty || !_isTracking) return;
 
     final endTime = DateTime.now();
     final existingTaskIndex = _tasks.indexWhere((t) => t.title == title);
@@ -161,15 +192,6 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
       final task = _tasks[existingTaskIndex];
       final block = TimeBlock(
         taskId: task.id,
-        startTime: _trackingStartTime!,
-        endTime: endTime,
-      );
-      await DatabaseService.instance.createTimeBlock(block);
-    } else {
-      final newTask = Task(title: title, color: _getNextColor());
-      final taskId = await DatabaseService.instance.createTask(newTask);
-      final block = TimeBlock(
-        taskId: taskId,
         startTime: _trackingStartTime!,
         endTime: endTime,
       );
@@ -183,42 +205,9 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
       _trackingStartTime = null;
       _taskController.clear();
       _ticker?.cancel();
+      _ticker = null;
     });
     _refreshTasks();
-  }
-
-  Future<void> _toggleTracking() async {
-    final title = _taskController.text.trim();
-    if (title.isEmpty) return;
-
-    if (_isTracking) {
-      await _stopTracking();
-    } else {
-      final existingTaskIndex = _tasks.indexWhere((t) => t.title == title);
-      if (existingTaskIndex == -1) {
-        final newTask = Task(title: title, color: _getNextColor());
-        await DatabaseService.instance.createTask(newTask);
-        await _refreshTasks();
-      }
-
-      final startTime = DateTime.now();
-      await DatabaseService.instance.saveTrackingState(title, startTime);
-
-      setState(() {
-        _isTracking = true;
-        _trackingStartTime = startTime;
-        final now = DateTime.now();
-        if (_selectedDate.year != now.year ||
-            _selectedDate.month != now.month ||
-            _selectedDate.day != now.day) {
-          _selectedDate = DateTime(now.year, now.month, now.day);
-        }
-        _ticker = Timer.periodic(const Duration(seconds: 1), (timer) {
-          setState(() {});
-        });
-      });
-      _refreshTasks();
-    }
   }
 
   void _editTask(Task task) {
@@ -511,10 +500,8 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                                     onToggleExpand: () => setState(
                                       () => task.isExpanded = !task.isExpanded,
                                     ),
-                                    onStartTracking: () {
-                                      _taskController.text = task.title;
-                                      _toggleTracking();
-                                    },
+                                    onStartTracking: () =>
+                                        _onStartTracking(task.title),
                                     onEdit: () => _editTask(task),
                                     onDelete: () => _deleteTask(task),
                                     onEditBlock: (block) =>
