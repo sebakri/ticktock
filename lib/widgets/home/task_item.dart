@@ -7,6 +7,8 @@ class TaskItem extends StatelessWidget {
   final Task task;
   final bool isTracking;
   final Duration activeDuration;
+  final Duration? customDuration;
+  final String? durationLabel;
   final VoidCallback onToggleExpand;
   final VoidCallback onStartTracking;
   final VoidCallback onEdit;
@@ -19,6 +21,8 @@ class TaskItem extends StatelessWidget {
     required this.task,
     this.isTracking = false,
     this.activeDuration = Duration.zero,
+    this.customDuration,
+    this.durationLabel,
     required this.onToggleExpand,
     required this.onStartTracking,
     required this.onEdit,
@@ -29,7 +33,8 @@ class TaskItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final duration = task.totalDuration + activeDuration;
+    final baseDuration = customDuration ?? task.totalDuration;
+    final duration = baseDuration + activeDuration;
     final durationStr =
         '${duration.inHours}:${(duration.inMinutes % 60).toString().padLeft(2, '0')}';
 
@@ -96,7 +101,7 @@ class TaskItem extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    'Total today',
+                    durationLabel ?? 'Total today',
                     style: TextStyle(color: Colors.grey[500], fontSize: 13),
                   ),
                   const SizedBox(width: 12),

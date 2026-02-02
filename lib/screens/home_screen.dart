@@ -301,6 +301,24 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                         return charIndex == _searchQuery.length;
                       }).toList();
 
+                      final todayTasks = filteredTasks.where((task) {
+                        final hasToday = task.blocks.any((b) =>
+                            b.startTime.year == _selectedDate.year &&
+                            b.startTime.month == _selectedDate.month &&
+                            b.startTime.day == _selectedDate.day);
+                        final isTrackingThisTask = _isTracking &&
+                            _taskController.text.trim() == task.title;
+                        final isTodaySelected =
+                            DateTime.now().year == _selectedDate.year &&
+                                DateTime.now().month == _selectedDate.month &&
+                                DateTime.now().day == _selectedDate.day;
+                        return hasToday || (isTrackingThisTask && isTodaySelected);
+                      }).toList();
+
+                      final libraryTasks = filteredTasks
+                          .where((task) => !todayTasks.contains(task))
+                          .toList();
+
                       return CustomScrollView(
                         slivers: [
                           SliverToBoxAdapter(
@@ -387,43 +405,114 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                               ],
                             ),
                           ),
-                          SliverList(
-                            delegate: SliverChildBuilderDelegate((
-                              context,
-                              index,
-                            ) {
-                              final task = filteredTasks[index];
-                              final isTrackingThisTask = _isTracking &&
-                                  _taskController.text.trim() == task.title;
-                              final activeDuration = isTrackingThisTask &&
-                                      _trackingStartTime != null
-                                  ? DateTime.now()
-                                      .difference(_trackingStartTime!)
-                                  : Duration.zero;
-
-                              return Padding(
+                          if (todayTasks.isNotEmpty) ...[
+                            SliverToBoxAdapter(
+                              child: Padding(
                                 padding: const EdgeInsets.only(bottom: 12),
-                                child: TaskItem(
-                                  task: task,
-                                  isTracking: isTrackingThisTask,
-                                  activeDuration: activeDuration,
-                                  onToggleExpand: () => setState(
-                                    () => task.isExpanded = !task.isExpanded,
-                                  ),
-                                  onStartTracking: () {
-                                    _taskController.text = task.title;
-                                    _toggleTracking();
-                                  },
-                                  onEdit: () => _editTask(task),
-                                  onDelete: () => _deleteTask(task),
-                                  onEditBlock: (block) =>
-                                      _editTimeBlock(task, block),
-                                  onDeleteBlock: (blockIndex) =>
-                                      _deleteTimeBlock(task, blockIndex),
+                                child: Text(
+                                  'ACTIVITY',
+                                  style: TextStyle(
+                                      color: Colors.grey[500],
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 1.2),
                                 ),
-                              );
-                            }, childCount: filteredTasks.length),
-                          ),
+                              ),
+                            ),
+                            SliverList(
+                              delegate: SliverChildBuilderDelegate((
+                                context,
+                                index,
+                              ) {
+                                final task = todayTasks[index];
+                                final isTrackingThisTask = _isTracking &&
+                                    _taskController.text.trim() == task.title;
+                                final activeDuration = isTrackingThisTask &&
+                                        _trackingStartTime != null
+                                    ? DateTime.now()
+                                        .difference(_trackingStartTime!)
+                                    : Duration.zero;
+
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: TaskItem(
+                                    task: task,
+                                    isTracking: isTrackingThisTask,
+                                    activeDuration: activeDuration,
+                                    customDuration: task.durationOn(_selectedDate),
+                                    durationLabel: 'On this day',
+                                    onToggleExpand: () => setState(
+                                      () => task.isExpanded = !task.isExpanded,
+                                    ),
+                                    onStartTracking: () {
+                                      _taskController.text = task.title;
+                                      _toggleTracking();
+                                    },
+                                    onEdit: () => _editTask(task),
+                                    onDelete: () => _deleteTask(task),
+                                    onEditBlock: (block) =>
+                                        _editTimeBlock(task, block),
+                                    onDeleteBlock: (blockIndex) =>
+                                        _deleteTimeBlock(task, blockIndex),
+                                  ),
+                                );
+                              }, childCount: todayTasks.length),
+                            ),
+                            const SliverToBoxAdapter(child: SizedBox(height: 12)),
+                          ],
+                          if (libraryTasks.isNotEmpty) ...[
+                            SliverToBoxAdapter(
+                              child: Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: Text(
+                                  'LIBRARY',
+                                  style: TextStyle(
+                                      color: Colors.grey[500],
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 1.2),
+                                ),
+                              ),
+                            ),
+                            SliverList(
+                              delegate: SliverChildBuilderDelegate((
+                                context,
+                                index,
+                              ) {
+                                final task = libraryTasks[index];
+                                final isTrackingThisTask = _isTracking &&
+                                    _taskController.text.trim() == task.title;
+                                final activeDuration = isTrackingThisTask &&
+                                        _trackingStartTime != null
+                                    ? DateTime.now()
+                                        .difference(_trackingStartTime!)
+                                    : Duration.zero;
+
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: TaskItem(
+                                    task: task,
+                                    isTracking: isTrackingThisTask,
+                                    activeDuration: activeDuration,
+                                    durationLabel: 'Lifetime total',
+                                    onToggleExpand: () => setState(
+                                      () => task.isExpanded = !task.isExpanded,
+                                    ),
+                                    onStartTracking: () {
+                                      _taskController.text = task.title;
+                                      _toggleTracking();
+                                    },
+                                    onEdit: () => _editTask(task),
+                                    onDelete: () => _deleteTask(task),
+                                    onEditBlock: (block) =>
+                                        _editTimeBlock(task, block),
+                                    onDeleteBlock: (blockIndex) =>
+                                        _deleteTimeBlock(task, blockIndex),
+                                  ),
+                                );
+                              }, childCount: libraryTasks.length),
+                            ),
+                          ],
                         ],
                       );
                     }),
@@ -437,10 +526,18 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
   Widget _buildTaskListHeader() {
     final totalDuration = _tasks.fold(
       Duration.zero,
-      (prev, task) => prev + task.totalDuration,
+      (prev, task) => prev + task.durationOn(_selectedDate),
     );
-    final totalTimeStr =
-        '${totalDuration.inHours}h ${totalDuration.inMinutes % 60}m total';
+    final activeDuration = _isTracking &&
+            _trackingStartTime != null &&
+            DateTime.now().year == _selectedDate.year &&
+            DateTime.now().month == _selectedDate.month &&
+            DateTime.now().day == _selectedDate.day
+        ? DateTime.now().difference(_trackingStartTime!)
+        : Duration.zero;
+    final total = totalDuration + activeDuration;
+
+    final totalTimeStr = '${total.inHours}h ${total.inMinutes % 60}m today';
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
