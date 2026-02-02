@@ -44,9 +44,14 @@ class GoToTodayIntent extends Intent {
   const GoToTodayIntent();
 }
 
-class ActivateTaskIntent extends Intent {
+class TrackActivityTaskIntent extends Intent {
   final int index;
-  const ActivateTaskIntent(this.index);
+  const TrackActivityTaskIntent(this.index);
+}
+
+class EditLibraryTaskIntent extends Intent {
+  final String char;
+  const EditLibraryTaskIntent(this.char);
 }
 
 class HomeScreen extends StatefulWidget {
@@ -232,7 +237,8 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                 _buildShortcutRow('⌘ + S', 'Toggle Tracking'),
                 _buildShortcutRow('⌘ + T', 'Go to Today'),
                 _buildShortcutRow('⌘ + D', 'Jump to Date'),
-                _buildShortcutRow('⌘ + 1-9', 'Open task in library'),
+                _buildShortcutRow('⌘ + 1-9', 'Start tracking activity task'),
+                _buildShortcutRow('⌘ + A-Z', 'Open task in library'),
                 _buildShortcutRow('Esc', 'Clear Search / Unfocus'),
                 _buildShortcutRow('?', 'Show this help'),
                 const Divider(color: Colors.white10),
@@ -558,6 +564,31 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
 
     final libraryTasks = filteredTasks;
 
+    // pool of keys for library shortcuts (excluding app-wide shortcuts N, F, S, T, D)
+    const libraryKeys = [
+      LogicalKeyboardKey.keyA,
+      LogicalKeyboardKey.keyB,
+      LogicalKeyboardKey.keyC,
+      LogicalKeyboardKey.keyE,
+      LogicalKeyboardKey.keyG,
+      LogicalKeyboardKey.keyH,
+      LogicalKeyboardKey.keyI,
+      LogicalKeyboardKey.keyJ,
+      LogicalKeyboardKey.keyK,
+      LogicalKeyboardKey.keyL,
+      LogicalKeyboardKey.keyM,
+      LogicalKeyboardKey.keyO,
+      LogicalKeyboardKey.keyP,
+      LogicalKeyboardKey.keyQ,
+      LogicalKeyboardKey.keyR,
+      LogicalKeyboardKey.keyU,
+      LogicalKeyboardKey.keyV,
+      LogicalKeyboardKey.keyW,
+      LogicalKeyboardKey.keyX,
+      LogicalKeyboardKey.keyY,
+      LogicalKeyboardKey.keyZ,
+    ];
+
     return Shortcuts(
       shortcuts: {
         const SingleActivator(LogicalKeyboardKey.keyN, meta: true):
@@ -574,25 +605,29 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
             const GoToTodayIntent(),
         const SingleActivator(LogicalKeyboardKey.keyD, meta: true):
             const JumpToDateIntent(),
-        // Cmd + 1-9
+        // Cmd + 1-9 for Activity Tasks (Start Tracking)
         const SingleActivator(LogicalKeyboardKey.digit1, meta: true):
-            const ActivateTaskIntent(0),
+            const TrackActivityTaskIntent(0),
         const SingleActivator(LogicalKeyboardKey.digit2, meta: true):
-            const ActivateTaskIntent(1),
+            const TrackActivityTaskIntent(1),
         const SingleActivator(LogicalKeyboardKey.digit3, meta: true):
-            const ActivateTaskIntent(2),
+            const TrackActivityTaskIntent(2),
         const SingleActivator(LogicalKeyboardKey.digit4, meta: true):
-            const ActivateTaskIntent(3),
+            const TrackActivityTaskIntent(3),
         const SingleActivator(LogicalKeyboardKey.digit5, meta: true):
-            const ActivateTaskIntent(4),
+            const TrackActivityTaskIntent(4),
         const SingleActivator(LogicalKeyboardKey.digit6, meta: true):
-            const ActivateTaskIntent(5),
+            const TrackActivityTaskIntent(5),
         const SingleActivator(LogicalKeyboardKey.digit7, meta: true):
-            const ActivateTaskIntent(6),
+            const TrackActivityTaskIntent(6),
         const SingleActivator(LogicalKeyboardKey.digit8, meta: true):
-            const ActivateTaskIntent(7),
+            const TrackActivityTaskIntent(7),
         const SingleActivator(LogicalKeyboardKey.digit9, meta: true):
-            const ActivateTaskIntent(8),
+            const TrackActivityTaskIntent(8),
+        // Cmd + A-Z for Library Tasks (Edit Modal)
+        for (int i = 0; i < libraryTasks.length && i < libraryKeys.length; i++)
+          SingleActivator(libraryKeys[i], meta: true):
+              EditLibraryTaskIntent(libraryKeys[i].keyLabel),
       },
       child: Actions(
         actions: {
@@ -617,10 +652,20 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
               return null;
             },
           ),
-          ActivateTaskIntent: CallbackAction<ActivateTaskIntent>(
+          TrackActivityTaskIntent: CallbackAction<TrackActivityTaskIntent>(
             onInvoke: (intent) {
-              if (intent.index < libraryTasks.length) {
-                _editTask(libraryTasks[intent.index]);
+              if (intent.index < todayTasks.length) {
+                _onStartTracking(todayTasks[intent.index].title);
+              }
+              return null;
+            },
+          ),
+          EditLibraryTaskIntent: CallbackAction<EditLibraryTaskIntent>(
+            onInvoke: (intent) {
+              final index = libraryKeys
+                  .indexWhere((k) => k.keyLabel == intent.char);
+              if (index != -1 && index < libraryTasks.length) {
+                _editTask(libraryTasks[index]);
               }
               return null;
             },
@@ -751,49 +796,44 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                                                                                   _trackingStartTime!)
                                                                               : Duration.zero;
                                 
-                                                                      final taskIndex =
-                                                                          filteredTasks.indexOf(task);
-                                                                      final shortcutLabel = taskIndex != -1 &&
-                                                                              taskIndex < 9
-                                                                          ? '⌘${taskIndex + 1}'
-                                                                          : null;
-                                
-                                                                      return ActivityLogItem(
-                                                                        task: task,
-                                                                        isTracking: isTrackingThisTask,
-                                                                        activeDuration: activeDuration,
-                                                                        dailyDuration:
-                                                                            task.durationOn(_selectedDate),
-                                                                        isExpanded: _expandedActivityIds
-                                                                            .contains(task.id),
-                                                                        shortcutLabel: shortcutLabel,
-                                                                        isFirst: index == 0,
-                                                                        isLast: index == todayTasks.length - 1,
-                                                                        onToggleExpand: () => setState(
-                                                                          () {
-                                                                            if (task.id != null) {
-                                                                              if (_expandedActivityIds
-                                                                                  .contains(task.id)) {
-                                                                                _expandedActivityIds
-                                                                                    .remove(task.id);
-                                                                              } else {
-                                                                                _expandedActivityIds
-                                                                                    .add(task.id!);
-                                                                              }
-                                                                            }
-                                                                          },
-                                                                        ),
-                                                                        onStartTracking: () =>
-                                                                            _onStartTracking(task.title),
-                                                                        onEditBlock: (block) =>
-                                                                            _editTimeBlock(task, block),
-                                                                        onDeleteBlock: (blockIndex) =>
-                                                                            _deleteTimeBlock(task, blockIndex),
-                                                                      );
-                                                                    }, childCount: todayTasks.length),
-                                                                  ),
-                                
-                              ],
+                                                                                                            final shortcutLabel =
+                                                                                                                index < 9 ? '⌘${index + 1}' : null;
+                                                                      
+                                                                                                            return ActivityLogItem(
+                                                                                                              task: task,
+                                                                                                              isTracking: isTrackingThisTask,
+                                                                                                              activeDuration: activeDuration,
+                                                                                                              dailyDuration:
+                                                                                                                  task.durationOn(_selectedDate),
+                                                                                                              isExpanded: _expandedActivityIds
+                                                                                                                  .contains(task.id),
+                                                                                                              shortcutLabel: shortcutLabel,
+                                                                                                              isFirst: index == 0,
+                                                                                                              isLast: index == todayTasks.length - 1,
+                                                                                                              onToggleExpand: () => setState(
+                                                                                                                () {
+                                                                                                                  if (task.id != null) {
+                                                                                                                    if (_expandedActivityIds
+                                                                                                                        .contains(task.id)) {
+                                                                                                                      _expandedActivityIds
+                                                                                                                          .remove(task.id);
+                                                                                                                    } else {
+                                                                                                                      _expandedActivityIds
+                                                                                                                          .add(task.id!);
+                                                                                                                    }
+                                                                                                                  }
+                                                                                                                },
+                                                                                                              ),
+                                                                                                              onStartTracking: () =>
+                                                                                                                  _onStartTracking(task.title),
+                                                                                                              onEditBlock: (block) =>
+                                                                                                                  _editTimeBlock(task, block),
+                                                                                                              onDeleteBlock: (blockIndex) =>
+                                                                                                                  _deleteTimeBlock(task, blockIndex),
+                                                                                                            );
+                                                                                                          }, childCount: todayTasks.length),
+                                                                                                        ),
+                                                                                                    ],
                               if (libraryTasks.isNotEmpty) ...[
                                 SliverToBoxAdapter(
                                   child: Column(
@@ -815,23 +855,28 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                                     crossAxisSpacing: 12,
                                     childAspectRatio: 1.8,
                                   ),
-                                  delegate: SliverChildBuilderDelegate((
-                                    context,
-                                    index,
-                                  ) {
-                                    final task = libraryTasks[index];
-                                    final isTrackingThisTask = _isTracking &&
-                                        _taskController.text.trim() ==
-                                            task.title;
-
-                                    return TaskTile(
-                                      task: task,
-                                      isTracking: isTrackingThisTask,
-                                      shortcutLabel:
-                                          index < 9 ? '⌘${index + 1}' : null,
-                                      onTap: () => _editTask(task),
-                                    );
-                                  }, childCount: libraryTasks.length),
+                                                                      delegate: SliverChildBuilderDelegate((
+                                                                        context,
+                                                                        index,
+                                                                      ) {
+                                                                        final task = libraryTasks[index];
+                                                                        final isTrackingThisTask = _isTracking &&
+                                                                            _taskController.text.trim() ==
+                                                                                task.title;
+                                  
+                                                                        final shortcutLabel =
+                                                                            index < libraryKeys.length
+                                                                                ? '⌘${libraryKeys[index].keyLabel}'
+                                                                                : null;
+                                  
+                                                                        return TaskTile(
+                                                                          task: task,
+                                                                          isTracking: isTrackingThisTask,
+                                                                          shortcutLabel: shortcutLabel,
+                                                                          onTap: () => _editTask(task),
+                                                                        );
+                                                                      }, childCount: libraryTasks.length),
+                                  
                                 ),
                               ],
                             ],
