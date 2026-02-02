@@ -24,11 +24,6 @@ class DayTimeline extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Day Timeline',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 12),
         Container(
           height: 32,
           decoration: BoxDecoration(

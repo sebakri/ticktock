@@ -18,95 +18,224 @@ class DailyLogHeader extends StatelessWidget {
     required this.onJumpToDate,
   });
 
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1E293B),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white10),
-          ),
-          child: Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.chevron_left),
-                onPressed: onPrevDay,
-              ),
-              Expanded(
-                child: Center(
-                  child: Text(
-                    DateFormat('MMM dd, yyyy').format(selectedDate),
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
+    @override
+
+    Widget build(BuildContext context) {
+
+      return Padding(
+
+        padding: const EdgeInsets.symmetric(vertical: 8),
+
+        child: Row(
+
+          children: [
+
+            // 1. Prev Day
+
+            _buildNavButton(Icons.chevron_left_rounded, onPrevDay),
+
+            const SizedBox(width: 12),
+
+            // 2. Date Display
+
+            Expanded(
+
+              child: Column(
+
+                crossAxisAlignment: CrossAxisAlignment.start,
+
+                children: [
+
+                  Text(
+
+                    DateFormat('EEEE').format(selectedDate),
+
+                    style: TextStyle(
+
+                      color: Colors.white.withOpacity(0.3),
+
+                      fontSize: 11,
+
+                      fontWeight: FontWeight.bold,
+
+                      letterSpacing: 0.5,
+
                     ),
+
                   ),
-                ),
+
+                  Text(
+
+                    DateFormat('MMMM dd, yyyy').format(selectedDate),
+
+                    style: const TextStyle(
+
+                      color: Colors.white,
+
+                      fontSize: 18,
+
+                      fontWeight: FontWeight.bold,
+
+                    ),
+
+                  ),
+
+                ],
+
               ),
-              IconButton(
-                icon: const Icon(Icons.chevron_right),
-                onPressed: onNextDay,
-              ),
-              const SizedBox(width: 16),
-              ElevatedButton(
-                onPressed: onToday,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4F46E5),
-                  foregroundColor: Colors.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  elevation: 0,
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('Today',
-                        style: TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.bold)),
-                    SizedBox(width: 8),
-                    ShortcutBadge(label: '⌘T', isLight: true),
-                  ],
-                ),
-              ),
-              const SizedBox(
-                height: 24,
-                child: VerticalDivider(color: Colors.white24, width: 32),
-              ),
-              ElevatedButton(
-                onPressed: onJumpToDate,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4F46E5),
-                  foregroundColor: Colors.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  elevation: 0,
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.calendar_today, size: 16),
-                    SizedBox(width: 8),
-                    Text('Jump to date',
-                        style: TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.bold)),
-                    SizedBox(width: 8),
-                    ShortcutBadge(label: '⌘D', isLight: true),
-                  ],
-                ),
-              ),
-            ],
-          ),
+
+            ),
+
+            // 3. Next Day
+
+            _buildNavButton(Icons.chevron_right_rounded, onNextDay),
+
+            const SizedBox(width: 24),
+
+            // 4. Today Button
+
+            _buildActionButton(
+
+              label: 'Today',
+
+              shortcut: '⌘T',
+
+              onPressed: onToday,
+
+            ),
+
+            const SizedBox(width: 12),
+
+            // 5. Jump Button
+
+            _buildActionButton(
+
+              label: 'Jump',
+
+              shortcut: '⌘D',
+
+              onPressed: onJumpToDate,
+
+              icon: Icons.calendar_today_rounded,
+
+            ),
+
+          ],
+
         ),
-      ],
-    );
+
+      );
+
+    }
+
+  
+
+    Widget _buildNavButton(IconData icon, VoidCallback onPressed) {
+
+      return Container(
+
+        decoration: BoxDecoration(
+
+          color: Colors.white.withOpacity(0.03),
+
+          borderRadius: BorderRadius.circular(8),
+
+          border: Border.all(color: Colors.white.withOpacity(0.05)),
+
+        ),
+
+        child: IconButton(
+
+          icon: Icon(icon, size: 20, color: Colors.white70),
+
+          onPressed: onPressed,
+
+          visualDensity: VisualDensity.compact,
+
+        ),
+
+      );
+
+    }
+
+  
+
+    Widget _buildActionButton({
+
+      required String label,
+
+      required String shortcut,
+
+      required VoidCallback onPressed,
+
+      IconData? icon,
+
+    }) {
+
+      return TextButton(
+
+        onPressed: onPressed,
+
+        style: TextButton.styleFrom(
+
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+
+          backgroundColor: Colors.white.withOpacity(0.03),
+
+                  shape: RoundedRectangleBorder(
+
+                    borderRadius: BorderRadius.circular(10),
+
+                    side: BorderSide(color: Colors.white.withOpacity(0.05)),
+
+                  ),
+
+          
+
+        ),
+
+        child: Row(
+
+          mainAxisSize: MainAxisSize.min,
+
+          children: [
+
+            if (icon != null) ...[
+
+              Icon(icon, size: 14, color: Colors.white60),
+
+              const SizedBox(width: 6),
+
+            ],
+
+            Text(
+
+              label,
+
+              style: const TextStyle(
+
+                color: Colors.white70,
+
+                fontSize: 13,
+
+                fontWeight: FontWeight.w600,
+
+              ),
+
+            ),
+
+            const SizedBox(width: 8),
+
+            ShortcutBadge(label: shortcut, isLight: true, fontSize: 10),
+
+          ],
+
+        ),
+
+      );
+
+    }
+
   }
-}
+
+  
