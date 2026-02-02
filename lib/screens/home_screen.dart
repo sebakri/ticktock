@@ -30,6 +30,10 @@ class ClearSearchIntent extends Intent {
   const ClearSearchIntent();
 }
 
+class ShowHelpIntent extends Intent {
+  const ShowHelpIntent();
+}
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -166,6 +170,81 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
       _tasks = tasks;
       _isLoading = false;
     });
+  }
+
+  void _showHelpDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: const Color(0xFF1E293B),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          width: 400,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Keyboard Shortcuts',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white70),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const Divider(color: Colors.white10),
+              const SizedBox(height: 16),
+              _buildShortcutRow('Option + Space', 'Toggle Hide/Show App (Global)'),
+              _buildShortcutRow('Option + S', 'Toggle Tracking (Global)'),
+              const SizedBox(height: 12),
+              _buildShortcutRow('Cmd + N', 'New Task'),
+              _buildShortcutRow('Cmd + F', 'Search Tasks'),
+              _buildShortcutRow('Cmd + S', 'Toggle Tracking'),
+              _buildShortcutRow('Esc', 'Clear Search / Unfocus'),
+              _buildShortcutRow('?', 'Show this help'),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildShortcutRow(String keys, String action) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F172A),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: Colors.white10),
+            ),
+            child: Text(
+              keys,
+              style: const TextStyle(
+                fontFamily: 'monospace',
+                color: Color(0xFF818CF8),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          Text(
+            action,
+            style: TextStyle(color: Colors.grey[400], fontSize: 14),
+          ),
+        ],
+      ),
+    );
   }
 
   Color _getNextColor() {
@@ -335,6 +414,8 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
             const ToggleTrackingIntent(),
         const SingleActivator(LogicalKeyboardKey.escape):
             const ClearSearchIntent(),
+        const SingleActivator(LogicalKeyboardKey.slash, shift: true):
+            const ShowHelpIntent(),
       },
       child: Actions(
         actions: {
@@ -343,6 +424,9 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
           ),
           FocusSearchIntent: CallbackAction<FocusSearchIntent>(
             onInvoke: (intent) => _searchFocusNode.requestFocus(),
+          ),
+          ShowHelpIntent: CallbackAction<ShowHelpIntent>(
+            onInvoke: (intent) => _showHelpDialog(),
           ),
           ToggleTrackingIntent: CallbackAction<ToggleTrackingIntent>(
             onInvoke: (intent) {
@@ -377,13 +461,28 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                   child: Container(
                     height: 60,
                     width: double.infinity,
-                    alignment: Alignment.center,
-                    child: Text(
-                      'TickTock',
-                      style: GoogleFonts.fascinate(
-                        fontSize: 36,
-                        color: const Color(0xFF818CF8),
-                      ),
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Stack(
+                      children: [
+                        Center(
+                          child: Text(
+                            'TickTock',
+                            style: GoogleFonts.fascinate(
+                              fontSize: 36,
+                              color: const Color(0xFF818CF8),
+                            ),
+                          ),
+                        ),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: IconButton(
+                            onPressed: _showHelpDialog,
+                            icon: const Icon(Icons.help_outline,
+                                color: Colors.white30, size: 20),
+                            tooltip: 'Shortcuts (?)',
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -653,27 +752,28 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(width: 8),
-              IconButton(
-                onPressed: _addNewTask,
-                icon: const Icon(Icons.add_circle_outline, color: Color(0xFF818CF8)),
-                tooltip: 'Add New Task',
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Container(
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: TextField(
-                    controller: _searchController,
-                    focusNode: _searchFocusNode,
-                    style: const TextStyle(fontSize: 14),
-                    textAlignVertical: TextAlignVertical.center,
-                    decoration: InputDecoration(
-                      hintText: 'Search tasks...',
-                      hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+                          IconButton(
+                            onPressed: _addNewTask,
+                            icon: const Icon(Icons.add_circle_outline, color: Color(0xFF818CF8)),
+                            tooltip: 'Add New Task (Cmd + N)',
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Container(
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.05),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: TextField(
+                                controller: _searchController,
+                                focusNode: _searchFocusNode,
+                                style: const TextStyle(fontSize: 14),
+                                textAlignVertical: TextAlignVertical.center,
+                                decoration: InputDecoration(
+                                  hintText: 'Search tasks... (Cmd + F)',
+                                  hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+              
                       prefixIcon: Icon(Icons.search,
                           size: 18, color: Colors.white.withOpacity(0.3)),
                       border: InputBorder.none,
