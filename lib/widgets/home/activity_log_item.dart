@@ -36,15 +36,22 @@ class ActivityLogItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final total = dailyDuration + activeDuration;
     final durationStr =
         '${total.inHours}h ${(total.inMinutes % 60).toString().padLeft(2, '0')}m';
     final timeFormat = DateFormat('hh:mm a');
-    
+
     // Use the first block's start time as the primary timestamp
-    final startTime = task.blocks.isNotEmpty 
+    final startTime = task.blocks.isNotEmpty
         ? timeFormat.format(task.blocks.first.startTime)
-        : isTracking ? timeFormat.format(DateTime.now().subtract(activeDuration)) : '--:--';
+        : isTracking
+            ? timeFormat.format(DateTime.now().subtract(activeDuration))
+            : '--:--';
+
+    final onSurface = theme.colorScheme.onSurface;
+    final isDark = theme.brightness == Brightness.dark;
+    final secondaryOpacity = isDark ? 0.3 : 0.5;
 
     return Column(
       children: [
@@ -60,7 +67,7 @@ class ActivityLogItem extends StatelessWidget {
                 child: Text(
                   startTime,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.3),
+                    color: onSurface.withOpacity(secondaryOpacity),
                     fontSize: 12,
                     fontFamily: 'monospace',
                   ),
@@ -77,13 +84,15 @@ class ActivityLogItem extends StatelessWidget {
                       Positioned(
                         top: 30,
                         bottom: 0,
-                        child: Container(width: 1, color: Colors.white10),
+                        child: Container(
+                            width: 1, color: onSurface.withOpacity(0.05)),
                       ),
                     if (!isFirst)
                       Positioned(
                         top: 0,
                         bottom: 30,
-                        child: Container(width: 1, color: Colors.white10),
+                        child: Container(
+                            width: 1, color: onSurface.withOpacity(0.05)),
                       ),
                     Container(
                       width: 12,
@@ -125,7 +134,8 @@ class ActivityLogItem extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: isTracking ? Colors.white : Colors.white.withOpacity(0.8),
+                        color:
+                            isTracking ? onSurface : onSurface.withOpacity(0.8),
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -134,7 +144,7 @@ class ActivityLogItem extends StatelessWidget {
                         task.description,
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.white.withOpacity(0.3),
+                          color: onSurface.withOpacity(secondaryOpacity),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -146,7 +156,9 @@ class ActivityLogItem extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: isTracking ? task.color.withOpacity(0.1) : Colors.white.withOpacity(0.03),
+                  color: isTracking
+                      ? task.color.withOpacity(0.1)
+                      : onSurface.withOpacity(0.03),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -154,7 +166,7 @@ class ActivityLogItem extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
-                    color: isTracking ? task.color : Colors.white.withOpacity(0.5),
+                    color: isTracking ? task.color : onSurface.withOpacity(0.5),
                   ),
                 ),
               ),
@@ -164,7 +176,8 @@ class ActivityLogItem extends StatelessWidget {
                 icon: Icon(
                   isTracking ? Icons.stop_rounded : Icons.play_arrow_rounded,
                   size: 22,
-                  color: isTracking ? Colors.redAccent : Colors.white24,
+                  color:
+                      isTracking ? Colors.redAccent : onSurface.withOpacity(0.2),
                 ),
                 onPressed: onStartTracking,
               ),
@@ -177,7 +190,8 @@ class ActivityLogItem extends StatelessWidget {
             padding: const EdgeInsets.only(left: 70), // Align with timeline
             child: Column(
               children: [
-                ...task.blocks.asMap().entries.map((entry) => _buildSessionRow(entry.value, entry.key)),
+                ...task.blocks.asMap().entries.map((entry) =>
+                    _buildSessionRow(entry.value, entry.key, onSurface, secondaryOpacity)),
                 const SizedBox(height: 16),
               ],
             ),
@@ -186,7 +200,8 @@ class ActivityLogItem extends StatelessWidget {
     );
   }
 
-  Widget _buildSessionRow(TimeBlock block, int index) {
+  Widget _buildSessionRow(
+      TimeBlock block, int index, Color onSurface, double secondaryOpacity) {
     final timeFormat = DateFormat('hh:mm a');
     final duration = block.duration;
     final durationStr = '${duration.inMinutes}m';
@@ -201,7 +216,7 @@ class ActivityLogItem extends StatelessWidget {
             child: Stack(
               alignment: Alignment.center,
               children: [
-                Container(width: 1, color: Colors.white10),
+                Container(width: 1, color: onSurface.withOpacity(0.05)),
                 Container(
                   width: 6,
                   height: 6,
@@ -216,22 +231,26 @@ class ActivityLogItem extends StatelessWidget {
           Expanded(
             child: Text(
               '${timeFormat.format(block.startTime)} - ${timeFormat.format(block.endTime)}',
-              style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 12),
+              style: TextStyle(
+                  color: onSurface.withOpacity(secondaryOpacity), fontSize: 12),
             ),
           ),
           Text(
             durationStr,
-            style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12, fontWeight: FontWeight.w500),
+            style: TextStyle(
+                color: onSurface.withOpacity(secondaryOpacity + 0.1),
+                fontSize: 12,
+                fontWeight: FontWeight.w500),
           ),
           const SizedBox(width: 8),
           IconButton(
-            icon:
-                const Icon(Icons.edit_outlined, size: 14, color: Colors.white30),
+            icon: Icon(Icons.edit_outlined,
+                size: 14, color: onSurface.withOpacity(secondaryOpacity)),
             onPressed: () => onEditBlock(block),
           ),
           IconButton(
-            icon:
-                const Icon(Icons.delete_outline, size: 14, color: Colors.white30),
+            icon: Icon(Icons.delete_outline,
+                size: 14, color: onSurface.withOpacity(secondaryOpacity)),
             onPressed: () => onDeleteBlock(index),
           ),
         ],

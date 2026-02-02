@@ -46,6 +46,9 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+
     void handleSave() {
       if (_nameController.text.trim().isEmpty) return;
       widget.onSave(
@@ -79,13 +82,13 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
               widget.onStart,
         },
         child: Dialog(
-          backgroundColor: const Color(0xFF0F172A),
+          backgroundColor: theme.colorScheme.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
-            side: BorderSide(color: Colors.white.withOpacity(0.05)),
+            side: BorderSide(color: onSurface.withOpacity(0.05)),
           ),
           child: Container(
-            width: 500,
+            width: 600,
             padding: const EdgeInsets.all(32),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -94,26 +97,27 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'Edit Task',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                         letterSpacing: -0.5,
+                        color: onSurface,
                       ),
                     ),
                     IconButton(
                       icon: const Icon(Icons.close, size: 20),
-                      color: Colors.white30,
+                      color: onSurface.withOpacity(0.3),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ],
                 ),
                 const SizedBox(height: 24),
-                const Text(
+                Text(
                   'TASK NAME',
                   style: TextStyle(
-                    color: Colors.white24,
+                    color: onSurface.withOpacity(0.25),
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.2,
@@ -121,25 +125,27 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
                 ),
                 const SizedBox(height: 12),
                 _buildTextField(_nameController, 'UI Design for Dashboard',
+                    onSurface,
                     autofocus: true),
                 const SizedBox(height: 24),
-                const Text(
+                Text(
                   'DESCRIPTION (OPTIONAL)',
                   style: TextStyle(
-                    color: Colors.white24,
+                    color: onSurface.withOpacity(0.25),
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.2,
                   ),
                 ),
                 const SizedBox(height: 12),
-                _buildTextField(_descController, 'Wireframing new layout concepts',
+                _buildTextField(
+                    _descController, 'Wireframing new layout concepts', onSurface,
                     maxLines: 3),
                 const SizedBox(height: 24),
-                const Text(
+                Text(
                   'COLOR',
                   style: TextStyle(
-                    color: Colors.white24,
+                    color: onSurface.withOpacity(0.25),
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.2,
@@ -161,7 +167,7 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
                           color: color,
                           shape: BoxShape.circle,
                           border: isSelected
-                              ? Border.all(color: Colors.white, width: 2)
+                              ? Border.all(color: onSurface, width: 2)
                               : Border.all(color: Colors.transparent),
                           boxShadow: isSelected
                               ? [
@@ -190,6 +196,7 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
                       label: 'Cancel',
                       shortcut: 'Esc',
                       onPressed: () => Navigator.pop(context),
+                      onSurface: onSurface,
                     ),
                     const SizedBox(width: 12),
                     _buildActionButton(
@@ -197,11 +204,12 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
                       shortcut: '⌘↵',
                       onPressed: handleSave,
                       isPrimary: true,
+                      onSurface: onSurface,
                     ),
                   ],
                 ),
                 const SizedBox(height: 24),
-                const Divider(color: Colors.white10),
+                Divider(color: onSurface.withOpacity(0.05)),
                 const SizedBox(height: 24),
                 // Row 2: Task Actions
                 Row(
@@ -215,6 +223,7 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
                         shortcut: '⌘⌫',
                         onPressed: handleDelete,
                         color: Colors.redAccent,
+                        onSurface: onSurface,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -225,6 +234,7 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
                         shortcut: '⌘S',
                         onPressed: widget.onStart,
                         color: const Color(0xFF4F46E5),
+                        onSurface: onSurface,
                       ),
                     ),
                   ],
@@ -241,11 +251,12 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
     required String label,
     required String shortcut,
     required VoidCallback onPressed,
+    required Color onSurface,
     IconData? icon,
     Color? color,
     bool isPrimary = false,
   }) {
-    final themeColor = color ?? Colors.white;
+    final themeColor = color ?? onSurface;
     return ElevatedButton(
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
@@ -278,23 +289,24 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String hint,
+  Widget _buildTextField(
+      TextEditingController controller, String hint, Color onSurface,
       {int maxLines = 1, bool autofocus = false}) {
     return TextField(
       controller: controller,
       maxLines: maxLines,
       autofocus: autofocus,
-      style: const TextStyle(fontSize: 15, color: Colors.white),
+      style: TextStyle(fontSize: 15, color: onSurface),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(color: Colors.white.withOpacity(0.15)),
+        hintStyle: TextStyle(color: onSurface.withOpacity(0.15)),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.03),
+        fillColor: onSurface.withOpacity(0.03),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.05)),
+          borderSide: BorderSide(color: onSurface.withOpacity(0.05)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),

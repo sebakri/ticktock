@@ -1,5 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:flutter/material.dart';
 import '../models/task.dart';
 import '../models/time_block.dart';
 
@@ -21,7 +22,7 @@ class DatabaseService {
 
     return await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -34,6 +35,15 @@ class DatabaseService {
           id INTEGER PRIMARY KEY,
           title TEXT,
           start_time TEXT
+        )
+      ''');
+    }
+    if (oldVersion < 3) {
+      await db.execute('''
+        CREATE TABLE window_state (
+          id INTEGER PRIMARY KEY,
+          width REAL,
+          height REAL
         )
       ''');
     }
@@ -67,6 +77,40 @@ class DatabaseService {
         start_time TEXT
       )
     ''');
+
+    await db.execute('''
+      CREATE TABLE window_state (
+        id INTEGER PRIMARY KEY,
+        width REAL,
+        height REAL
+      )
+    ''');
+  }
+
+  Future<void> saveWindowSize(double width, double height) async {
+    final db = await instance.database;
+    await db.insert(
+      'window_state',
+      {
+        'id': 1,
+        'width': width,
+        'height': height,
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<Size?> getWindowSize() async {
+    final db = await instance.database;
+    final maps = await db.query(
+      'window_state',
+      where: 'id = ?',
+      whereArgs: [1],
+    );
+    if (maps.isNotEmpty) {
+      return Size(maps.first['width'] as double, maps.first['height'] as double);
+    }
+    return null;
   }
 
   Future<void> saveTrackingState(String title, DateTime startTime) async {

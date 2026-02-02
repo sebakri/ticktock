@@ -54,10 +54,13 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+
     void handleSave() {
       if (_nameController.text.trim().isEmpty || _errorMessage != null) return;
-      widget.onSave(_nameController.text.trim(),
-          _descController.text.trim(), _selectedColor);
+      widget.onSave(_nameController.text.trim(), _descController.text.trim(),
+          _selectedColor);
       Navigator.pop(context);
     }
 
@@ -69,10 +72,10 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
               Navigator.pop(context),
         },
         child: Dialog(
-          backgroundColor: const Color(0xFF0F172A),
+          backgroundColor: theme.colorScheme.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
-            side: BorderSide(color: Colors.white.withOpacity(0.05)),
+            side: BorderSide(color: onSurface.withOpacity(0.05)),
           ),
           child: Container(
             width: 500,
@@ -84,33 +87,34 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'Add New Task',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                         letterSpacing: -0.5,
+                        color: onSurface,
                       ),
                     ),
                     IconButton(
                       icon: const Icon(Icons.close, size: 20),
-                      color: Colors.white30,
+                      color: onSurface.withOpacity(0.3),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ],
                 ),
                 const SizedBox(height: 24),
-                const Text(
+                Text(
                   'TASK NAME',
                   style: TextStyle(
-                    color: Colors.white24,
+                    color: onSurface.withOpacity(0.25),
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.2,
                   ),
                 ),
                 const SizedBox(height: 12),
-                _buildTextField(_nameController, 'e.g. Design System',
+                _buildTextField(_nameController, 'e.g. Design System', onSurface,
                     autofocus: true),
                 if (_errorMessage != null) ...[
                   const SizedBox(height: 8),
@@ -130,23 +134,24 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
                   ),
                 ],
                 const SizedBox(height: 24),
-                const Text(
+                Text(
                   'DESCRIPTION (OPTIONAL)',
                   style: TextStyle(
-                    color: Colors.white24,
+                    color: onSurface.withOpacity(0.25),
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.2,
                   ),
                 ),
                 const SizedBox(height: 12),
-                _buildTextField(_descController, 'What is this task about?',
+                _buildTextField(
+                    _descController, 'What is this task about?', onSurface,
                     maxLines: 3),
                 const SizedBox(height: 24),
-                const Text(
+                Text(
                   'COLOR',
                   style: TextStyle(
-                    color: Colors.white24,
+                    color: onSurface.withOpacity(0.25),
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.2,
@@ -168,7 +173,7 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
                           color: color,
                           shape: BoxShape.circle,
                           border: isSelected
-                              ? Border.all(color: Colors.white, width: 2)
+                              ? Border.all(color: onSurface, width: 2)
                               : Border.all(color: Colors.transparent),
                           boxShadow: isSelected
                               ? [
@@ -196,6 +201,7 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
                       label: 'Cancel',
                       shortcut: 'Esc',
                       onPressed: () => Navigator.pop(context),
+                      onSurface: onSurface,
                     ),
                     const SizedBox(width: 16),
                     _buildActionButton(
@@ -206,6 +212,7 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
                           ? null
                           : handleSave,
                       isPrimary: true,
+                      onSurface: onSurface,
                     ),
                   ],
                 ),
@@ -221,24 +228,25 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
     required String label,
     required String shortcut,
     required VoidCallback? onPressed,
+    required Color onSurface,
     IconData? icon,
     Color? color,
     bool isPrimary = false,
   }) {
-    final themeColor = color ?? Colors.white;
+    final themeColor = color ?? onSurface;
     return ElevatedButton(
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
         backgroundColor:
-            isPrimary ? const Color(0xFF4F46E5) : themeColor.withOpacity(0.03),
-        foregroundColor: isPrimary ? Colors.white : themeColor.withOpacity(0.7),
-        disabledBackgroundColor: Colors.white.withOpacity(0.05),
-        disabledForegroundColor: Colors.white10,
+            isPrimary ? const Color(0xFF4F46E5) : onSurface.withOpacity(0.03),
+        foregroundColor: isPrimary ? Colors.white : onSurface.withOpacity(0.7),
+        disabledBackgroundColor: onSurface.withOpacity(0.05),
+        disabledForegroundColor: onSurface.withOpacity(0.1),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
           side: BorderSide(
-            color: isPrimary ? Colors.transparent : themeColor.withOpacity(0.05),
+            color: isPrimary ? Colors.transparent : onSurface.withOpacity(0.05),
           ),
         ),
         elevation: 0,
@@ -261,23 +269,24 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String hint,
+  Widget _buildTextField(
+      TextEditingController controller, String hint, Color onSurface,
       {int maxLines = 1, bool autofocus = false}) {
     return TextField(
       controller: controller,
       maxLines: maxLines,
       autofocus: autofocus,
-      style: const TextStyle(fontSize: 15, color: Colors.white),
+      style: TextStyle(fontSize: 15, color: onSurface),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(color: Colors.white.withOpacity(0.15)),
+        hintStyle: TextStyle(color: onSurface.withOpacity(0.15)),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.03),
+        fillColor: onSurface.withOpacity(0.03),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.05)),
+          borderSide: BorderSide(color: onSurface.withOpacity(0.05)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),

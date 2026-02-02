@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
-import 'screens/home_screen.dart';
+import 'app.dart';
+import 'services/database_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
   await windowManager.setPreventClose(true);
 
-  WindowOptions windowOptions = const WindowOptions(
-    size: Size(1000, 800),
-    center: true,
+  // Restore last window size
+  final savedSize = await DatabaseService.instance.getWindowSize();
+  final initialSize = savedSize ?? const Size(1000, 800);
+
+  WindowOptions windowOptions = WindowOptions(
+    size: initialSize,
+    center: savedSize == null, // Only center if it's the first run
     backgroundColor: Colors.transparent,
     skipTaskbar: false,
     titleBarStyle: TitleBarStyle.hidden,
@@ -22,28 +26,4 @@ void main() async {
   });
 
   runApp(const TickTockApp());
-}
-
-class TickTockApp extends StatelessWidget {
-  const TickTockApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'TickTock',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF0F172A),
-        textTheme: GoogleFonts.interTextTheme(
-          ThemeData.dark().textTheme,
-        ),
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF4F46E5),
-          surface: Color(0xFF1E293B),
-        ),
-      ),
-      home: const HomeScreen(),
-    );
-  }
 }

@@ -15,6 +15,7 @@ import '../widgets/home/activity_log_item.dart';
 import '../widgets/home/task_tile.dart';
 import '../widgets/shortcut_badge.dart';
 import '../services/database_service.dart';
+import '../app.dart';
 
 class AddTaskIntent extends Intent {
   const AddTaskIntent();
@@ -185,6 +186,12 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
     await windowManager.hide();
   }
 
+  @override
+  void onWindowResized() async {
+    final size = await windowManager.getSize();
+    await DatabaseService.instance.saveWindowSize(size.width, size.height);
+  }
+
   Future _refreshTasks() async {
     final tasks = await DatabaseService.instance.getTasks();
     setState(() {
@@ -194,6 +201,9 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
   }
 
   void _showHelpDialog() {
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+
     showDialog(
       context: context,
       builder: (context) => CallbackShortcuts(
@@ -202,7 +212,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
               Navigator.pop(context),
         },
         child: Dialog(
-          backgroundColor: const Color(0xFF1E293B),
+          backgroundColor: theme.colorScheme.surface,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Container(
@@ -215,19 +225,21 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'Keyboard Shortcuts',
-                      style:
-                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: onSurface),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white70),
+                      icon: Icon(Icons.close, color: onSurface.withOpacity(0.3)),
                       onPressed: () => Navigator.pop(context),
                       tooltip: 'Close (Esc)',
                     ),
                   ],
                 ),
-                const Divider(color: Colors.white10),
+                Divider(color: onSurface.withOpacity(0.05)),
                 const SizedBox(height: 16),
                 _buildShortcutRow('⌥ + Space', 'Toggle Hide/Show App (Global)'),
                 _buildShortcutRow('⌥ + S', 'Toggle Tracking (Global)'),
@@ -241,12 +253,14 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                 _buildShortcutRow('⌘ + A-Z', 'Open task in library'),
                 _buildShortcutRow('Esc', 'Clear Search / Unfocus'),
                 _buildShortcutRow('?', 'Show this help'),
-                const Divider(color: Colors.white10),
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8),
+                Divider(color: onSurface.withOpacity(0.05)),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Text('Inside Task Modal',
-                      style:
-                          TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: onSurface.withOpacity(0.6))),
                 ),
                 _buildShortcutRow('⌘ + S', 'Start Tracking'),
                 _buildShortcutRow('⌘ + ⌫', 'Delete Task'),
@@ -261,7 +275,10 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
   }
 
   Widget _buildShortcutRow(String keys, String action) {
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
     final keyParts = keys.split(' + ');
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
@@ -277,15 +294,14 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: Text('+',
                         style: TextStyle(
-                            color: Colors.white.withOpacity(0.3),
-                            fontSize: 12)),
+                            color: onSurface.withOpacity(0.3), fontSize: 12)),
                   ),
               ],
             ],
           ),
           Text(
             action,
-            style: TextStyle(color: Colors.grey[400], fontSize: 14),
+            style: TextStyle(color: onSurface.withOpacity(0.5), fontSize: 14),
           ),
         ],
       ),
@@ -293,16 +309,19 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
   }
 
   Widget _buildSectionHeader(String title, IconData icon, {Widget? trailing}) {
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+
     return Padding(
       padding: const EdgeInsets.only(top: 48, bottom: 16),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: Colors.white.withOpacity(0.3)),
+          Icon(icon, size: 16, color: onSurface.withOpacity(0.3)),
           const SizedBox(width: 8),
           Text(
             title,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.4),
+              color: onSurface.withOpacity(0.4),
               fontSize: 12,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.2,
@@ -315,7 +334,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    Colors.white.withOpacity(0.1),
+                    onSurface.withOpacity(0.1),
                     Colors.transparent,
                   ],
                 ),
@@ -695,15 +714,16 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
         child: Focus(
           focusNode: _mainFocusNode,
           autofocus: true,
-          child: Scaffold(
-            backgroundColor: const Color(0xFF0F172A),
-            body: Column(
-              children: [
-                DragToMoveArea(
-                  child: Container(
-                    height: 60,
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Scaffold(
+                    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                    body: Column(
+                      children: [
+                        DragToMoveArea(
+                          child: Container(
+                            height: 60,
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+          
                     child: Stack(
                       children: [
                         Center(
@@ -711,17 +731,54 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                             'TickTock',
                             style: GoogleFonts.fascinate(
                               fontSize: 36,
-                              color: const Color(0xFF818CF8),
+                              color: Theme.of(context).colorScheme.primary,
                             ),
                           ),
                         ),
                         Align(
                           alignment: Alignment.centerRight,
-                          child: IconButton(
-                            onPressed: _showHelpDialog,
-                            icon: const Icon(Icons.help_outline,
-                                color: Colors.white30, size: 20),
-                            tooltip: 'Shortcuts (?)',
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                onPressed: () =>
+                                    TickTockApp.of(context).toggleTheme(),
+                                icon: Icon(
+                                  () {
+                                    final mode =
+                                        TickTockApp.of(context).themeMode;
+                                    if (mode == ThemeMode.system) {
+                                      return Icons.brightness_auto_rounded;
+                                    }
+                                    return mode == ThemeMode.dark
+                                        ? Icons.dark_mode_rounded
+                                        : Icons.light_mode_rounded;
+                                  }(),
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withOpacity(0.3),
+                                  size: 20,
+                                ),
+                                tooltip: () {
+                                  final mode =
+                                      TickTockApp.of(context).themeMode;
+                                  return 'Theme: ${mode.name.toUpperCase()}';
+                                }(),
+                              ),
+                              IconButton(
+                                onPressed: _showHelpDialog,
+                                icon: Icon(
+                                  Icons.help_outline,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withOpacity(0.3),
+                                  size: 20,
+                                ),
+                                tooltip: 'Shortcuts (?)',
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -892,6 +949,9 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
   }
 
   Widget _buildTodayTotalBadge() {
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+
     final totalDuration = _tasks.fold(
       Duration.zero,
       (prev, task) => prev + task.durationOn(_selectedDate),
@@ -908,14 +968,14 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03),
+        color: onSurface.withOpacity(0.03),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: onSurface.withOpacity(0.05)),
       ),
       child: Text(
         '${total.inHours}h ${total.inMinutes % 60}m total',
         style: TextStyle(
-          color: Colors.white.withOpacity(0.4),
+          color: onSurface.withOpacity(0.4),
           fontSize: 12,
           fontWeight: FontWeight.w600,
         ),
@@ -924,6 +984,9 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
   }
 
   Widget _buildSearchHeader() {
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+
     return Row(
       children: [
         ElevatedButton(
@@ -955,29 +1018,29 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
           child: Container(
             height: 44,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
+              color: onSurface.withOpacity(0.05),
               borderRadius: BorderRadius.circular(12),
             ),
             child: TextField(
               controller: _searchController,
               focusNode: _searchFocusNode,
-              style: const TextStyle(fontSize: 14),
+              style: TextStyle(fontSize: 14, color: onSurface),
               textAlignVertical: TextAlignVertical.center,
               decoration: InputDecoration(
                 hintText: 'Search tasks...',
-                hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+                hintStyle: TextStyle(color: onSurface.withOpacity(0.3)),
                 prefixIcon: Icon(Icons.search,
-                    size: 20, color: Colors.white.withOpacity(0.3)),
+                    size: 20, color: onSurface.withOpacity(0.3)),
                 border: InputBorder.none,
                 isDense: true,
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear,
-                            size: 18, color: Colors.white70),
+                        icon: Icon(Icons.clear,
+                            size: 18, color: onSurface.withOpacity(0.7)),
                         onPressed: () => _searchController.clear(),
                       )
-                    : const Padding(
-                        padding: EdgeInsets.only(right: 12),
+                    : Padding(
+                        padding: const EdgeInsets.only(right: 12),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [

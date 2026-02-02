@@ -21,15 +21,19 @@ class DayTimeline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+    final isDark = theme.brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           height: 32,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.03),
+            color: onSurface.withOpacity(0.03),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withOpacity(0.05)),
+            border: Border.all(color: onSurface.withOpacity(0.05)),
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
@@ -43,7 +47,7 @@ class DayTimeline extends StatelessWidget {
               .map((time) => Text(
                     time,
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.2),
+                      color: onSurface.withOpacity(isDark ? 0.2 : 0.4),
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
                       fontFamily: 'monospace',

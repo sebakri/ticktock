@@ -18,19 +18,23 @@ class TaskTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final duration = task.totalDuration;
     final durationStr =
         '${duration.inHours}h ${(duration.inMinutes % 60)}m total';
+
+    final onSurface = theme.colorScheme.onSurface;
+    final isDark = theme.brightness == Brightness.dark;
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.03),
+          color: onSurface.withOpacity(0.03),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isTracking ? task.color : Colors.white.withOpacity(0.05),
+            color: isTracking ? task.color : onSurface.withOpacity(0.05),
             width: isTracking ? 1.5 : 1,
           ),
         ),
@@ -72,10 +76,10 @@ class TaskTile extends StatelessWidget {
                       Expanded(
                         child: Text(
                           task.title,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: onSurface,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -97,7 +101,7 @@ class TaskTile extends StatelessWidget {
                       task.description,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.white.withOpacity(0.25),
+                        color: onSurface.withOpacity(isDark ? 0.25 : 0.45),
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -113,7 +117,7 @@ class TaskTile extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
-                          color: Colors.white.withOpacity(0.3),
+                          color: onSurface.withOpacity(isDark ? 0.3 : 0.5),
                         ),
                       ),
                       if (isTracking)

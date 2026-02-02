@@ -14,21 +14,34 @@ class ShortcutBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final bgColor = isLight
+        ? theme.colorScheme.onSurface.withOpacity(isDark ? 0.1 : 0.05)
+        : theme.colorScheme.surface;
+
+    final textColor = isLight
+        ? theme.colorScheme.onSurface.withOpacity(0.6)
+        : theme.colorScheme.primary;
+
+    final borderColor = isLight
+        ? theme.colorScheme.onSurface.withOpacity(0.1)
+        : theme.colorScheme.onSurface.withOpacity(0.05);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: isLight ? Colors.white.withOpacity(0.1) : const Color(0xFF0F172A),
+        color: bgColor,
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(
-          color: isLight ? Colors.white.withOpacity(0.2) : Colors.white.withOpacity(0.1),
-        ),
+        border: Border.all(color: borderColor),
       ),
       child: Text(
         label,
         style: TextStyle(
           fontSize: fontSize,
           fontFamily: 'monospace',
-          color: isLight ? Colors.white70 : const Color(0xFF818CF8),
+          color: textColor,
           fontWeight: FontWeight.bold,
         ),
       ),
