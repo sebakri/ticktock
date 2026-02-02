@@ -315,9 +315,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                         return hasToday || (isTrackingThisTask && isTodaySelected);
                       }).toList();
 
-                      final libraryTasks = filteredTasks
-                          .where((task) => !todayTasks.contains(task))
-                          .toList();
+                      final libraryTasks = filteredTasks;
 
                       return CustomScrollView(
                         slivers: [
