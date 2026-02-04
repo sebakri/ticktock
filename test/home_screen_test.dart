@@ -86,4 +86,27 @@ void main() {
     expect(find.text('WorkTask'), findsWidgets);
     expect(find.text('HomeTask'), findsWidgets);
   });
+
+  testWidgets('HomeScreen toggle tracking shortcut logic', (WidgetTester tester) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 1200));
+    
+    final tasks = [
+      Task(id: 1, title: 'LastTask', color: Colors.blue),
+    ];
+    when(() => mockTaskService.getTasks()).thenAnswer((_) async => tasks);
+    when(() => mockTaskService.getLastActiveTaskTitle()).thenAnswer((_) async => 'LastTask');
+    when(() => mockTaskService.saveTrackingState(any(), any())).thenAnswer((_) async => {});
+
+    await tester.pumpWidget(const TickTockApp());
+    await tester.pumpAndSettle();
+
+    // Trigger Cmd+S
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.meta);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.meta);
+    await tester.pumpAndSettle();
+
+    // Verify tracking started for 'LastTask'
+    verify(() => mockTaskService.saveTrackingState('LastTask', any())).called(1);
+  });
 }

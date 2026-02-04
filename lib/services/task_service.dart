@@ -232,6 +232,22 @@ class TaskService {
     );
   }
 
+  Future<String?> getLastActiveTaskTitle() async {
+    final db = await instance.database;
+    final result = await db.rawQuery('''
+      SELECT t.title 
+      FROM tasks t
+      JOIN time_blocks b ON t.id = b.task_id
+      ORDER BY b.end_time DESC
+      LIMIT 1
+    ''');
+    
+    if (result.isNotEmpty) {
+      return result.first['title'] as String?;
+    }
+    return null;
+  }
+
   Future close() async {
     final db = await instance.database;
     db.close();
