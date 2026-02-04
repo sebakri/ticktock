@@ -412,6 +412,22 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
     }
   }
 
+  void _handleToggleTracking() async {
+    if (_isTracking) {
+      await _stopTracking();
+    } else {
+      // 1. Try to get the last active task from DB
+      final lastActiveTitle =
+          await TaskService.instance.getLastActiveTaskTitle();
+      if (lastActiveTitle != null) {
+        await _startTracking(lastActiveTitle);
+      } else if (_tasks.isNotEmpty) {
+        // 2. Fallback to first task in list
+        await _startTracking(_tasks.first.title);
+      }
+    }
+  }
+
   Future<void> _startTracking(String title) async {
     if (_isTracking) {
       await _stopTracking();
@@ -729,15 +745,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
           ),
           ToggleTrackingIntent: CallbackAction<ToggleTrackingIntent>(
             onInvoke: (intent) {
-              try {
-                if (_isTracking) {
-                  _stopTracking();
-                } else if (_tasks.isNotEmpty) {
-                  _startTracking(_tasks.first.title);
-                }
-              } catch (e) {
-                debugPrint('Error toggling tracking via shortcut: $e');
-              }
+              _handleToggleTracking();
               return null;
             },
           ),
