@@ -16,6 +16,13 @@ const config: Config = {
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
 
+  stylesheets: [
+    {
+      href: 'https://fonts.googleapis.com/css2?family=Fascinate&family=Inter:wght@400;600;700&display=swap',
+      type: 'text/css',
+    },
+  ],
+
   i18n: {
     defaultLocale: 'en',
     locales: ['en'],
