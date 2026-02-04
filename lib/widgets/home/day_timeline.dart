@@ -92,114 +92,117 @@ class DayTimeline extends StatelessWidget {
     final totalTimelineSeconds = timelineEnd.difference(timelineStart).inSeconds.toDouble();
     if (totalTimelineSeconds <= 0) return const SizedBox.shrink();
 
-    // Generate labels
-    List<DateTime> labels = [];
-    labels.add(timelineStart);
-
-    final int intervalMinutes = 30;
-    DateTime currentIntervalTime = DateTime(
-      timelineStart.year,
-      timelineStart.month,
-      timelineStart.day,
-      timelineStart.hour,
-      (timelineStart.minute ~/ intervalMinutes) * intervalMinutes,
-    );
-    if (currentIntervalTime.isBefore(timelineStart)) {
-      currentIntervalTime = currentIntervalTime.add(Duration(minutes: intervalMinutes));
-    }
-
-    while (currentIntervalTime.isBefore(timelineEnd)) {
-      if (!labels.any((label) => label.isAtSameMomentAs(currentIntervalTime))) {
-          labels.add(currentIntervalTime);
-      }
-      currentIntervalTime = currentIntervalTime.add(Duration(minutes: intervalMinutes));
-    }
-
-    if (!labels.any((label) => label.isAtSameMomentAs(timelineEnd))) {
-      labels.add(timelineEnd);
-    }
-
-    labels.sort((a, b) => a.compareTo(b));
-
-    List<DateTime> finalLabels = [];
-    if (labels.isNotEmpty) {
-      finalLabels.add(labels.first);
-      for (int i = 1; i < labels.length - 1; i++) {
-        // Minimum 15-minute separation to prevent overlap
-        if (labels[i].difference(finalLabels.last).inMinutes >= 15 &&
-            labels.last.difference(labels[i]).inMinutes >= 15) {
-          finalLabels.add(labels[i]);
-        }
-      }
-      if (labels.length > 1) {
-        finalLabels.add(labels.last);
-      }
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          height: 32,
-          decoration: BoxDecoration(
-            color: onSurface.withOpacity(0.03),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: onSurface.withOpacity(0.05)),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: _buildDayTimelineBars(timelineStart, timelineEnd, totalTimelineSeconds, now, finalLabels, onSurface),
-          ),
-        ),
-        const SizedBox(height: 8),
-        _buildTimeLabels(onSurface, isDark, timelineStart, timelineEnd, totalTimelineSeconds, finalLabels),
-      ],
-    );
-  }
-
-  Widget _buildTimeLabels(Color onSurface, bool isDark, DateTime timelineStart, DateTime timelineEnd, double totalTimelineSeconds, List<DateTime> finalLabels) {
     return LayoutBuilder(builder: (context, constraints) {
       final double width = constraints.maxWidth;
-      
-      return SizedBox(
-        height: 16,
-        child: Stack(
-          children: finalLabels.asMap().entries.map((entry) {
-            final index = entry.key;
-            final time = entry.value;
-            final seconds = time.difference(timelineStart).inSeconds.toDouble();
-            final percent = seconds / totalTimelineSeconds;
-            
-            const double labelWidth = 50;
-            double left = percent * width - (labelWidth / 2);
-            
-            if (index == 0) {
-              left = 0;
-            } else if (index == finalLabels.length - 1) {
-              left = width - labelWidth;
-            } else {
-              if (left < 10) left = 10;
-              if (left + labelWidth > width - 10) left = width - labelWidth - 10;
-            }
 
-            return Positioned(
-              left: left,
-              width: labelWidth,
-              child: Text(
-                '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}',
-                textAlign: index == 0 ? TextAlign.left : index == finalLabels.length - 1 ? TextAlign.right : TextAlign.center,
-                style: TextStyle(
-                  color: onSurface.withOpacity(isDark ? 0.2 : 0.4),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'monospace',
-                ),
-              ),
-            );
-          }).toList(),
-        ),
+      // 1. Generate candidate labels at 30-minute intervals
+      List<DateTime> labels30 = _generateLabels(timelineStart, timelineEnd, 30);
+      List<DateTime> finalLabels = _filterLabels(labels30, timelineStart, timelineEnd);
+
+      // 2. Check if 30-minute labels are too crowded (assuming ~60px per label for safety)
+      if (finalLabels.length * 60 > width) {
+        // Fallback to 60-minute intervals
+        List<DateTime> labels60 = _generateLabels(timelineStart, timelineEnd, 60);
+        finalLabels = _filterLabels(labels60, timelineStart, timelineEnd);
+      }
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            height: 32,
+            decoration: BoxDecoration(
+              color: onSurface.withOpacity(0.03),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: onSurface.withOpacity(0.05)),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: _buildDayTimelineBars(timelineStart, timelineEnd, totalTimelineSeconds, now, finalLabels, onSurface),
+            ),
+          ),
+          const SizedBox(height: 8),
+          _buildTimeLabels(onSurface, isDark, timelineStart, timelineEnd, totalTimelineSeconds, finalLabels, width),
+        ],
       );
     });
+  }
+
+  List<DateTime> _generateLabels(DateTime start, DateTime end, int intervalMinutes) {
+    List<DateTime> labels = [start];
+    DateTime current = DateTime(start.year, start.month, start.day, start.hour, (start.minute ~/ intervalMinutes) * intervalMinutes);
+    if (current.isBefore(start)) {
+      current = current.add(Duration(minutes: intervalMinutes));
+    }
+
+    while (current.isBefore(end)) {
+      if (!labels.any((l) => l.isAtSameMomentAs(current))) {
+        labels.add(current);
+      }
+      current = current.add(Duration(minutes: intervalMinutes));
+    }
+    if (!labels.any((l) => l.isAtSameMomentAs(end))) {
+      labels.add(end);
+    }
+    labels.sort();
+    return labels;
+  }
+
+  List<DateTime> _filterLabels(List<DateTime> labels, DateTime start, DateTime end) {
+    if (labels.isEmpty) return [];
+    List<DateTime> result = [labels.first];
+    for (int i = 1; i < labels.length - 1; i++) {
+      // Ensure at least 10 minutes separation from first and last
+      if (labels[i].difference(result.last).inMinutes >= 10 &&
+          labels.last.difference(labels[i]).inMinutes >= 10) {
+        result.add(labels[i]);
+      }
+    }
+    if (labels.length > 1) {
+      result.add(labels.last);
+    }
+    return result;
+  }
+
+  Widget _buildTimeLabels(Color onSurface, bool isDark, DateTime timelineStart, DateTime timelineEnd, double totalTimelineSeconds, List<DateTime> finalLabels, double width) {
+    return SizedBox(
+      height: 16,
+      child: Stack(
+        children: finalLabels.asMap().entries.map((entry) {
+          final index = entry.key;
+          final time = entry.value;
+          final seconds = time.difference(timelineStart).inSeconds.toDouble();
+          final percent = seconds / totalTimelineSeconds;
+          
+          const double labelWidth = 50;
+          double left = percent * width - (labelWidth / 2);
+          
+          if (index == 0) {
+            left = 0;
+          } else if (index == finalLabels.length - 1) {
+            left = width - labelWidth;
+          } else {
+            if (left < 10) left = 10;
+            if (left + labelWidth > width - 10) left = width - labelWidth - 10;
+          }
+
+          return Positioned(
+            left: left,
+            width: labelWidth,
+            child: Text(
+              '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}',
+              textAlign: index == 0 ? TextAlign.left : index == finalLabels.length - 1 ? TextAlign.right : TextAlign.center,
+              style: TextStyle(
+                color: onSurface.withOpacity(isDark ? 0.2 : 0.4),
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'monospace',
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
   }
 
   Widget _buildDayTimelineBars(DateTime timelineStart, DateTime timelineEnd, double totalTimelineSeconds, DateTime now, List<DateTime> finalLabels, Color onSurface) {

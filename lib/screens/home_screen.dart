@@ -130,28 +130,6 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
         }
       },
     );
-
-    // Option + S: Toggle Tracking
-    HotKey toggleTrackingHotKey = HotKey(
-      key: LogicalKeyboardKey.keyS,
-      modifiers: [HotKeyModifier.alt],
-      scope: HotKeyScope.system,
-    );
-    await hotKeyManager.register(
-      toggleTrackingHotKey,
-      keyDownHandler: (hotKey) {
-        _handleGlobalToggleTracking();
-      },
-    );
-  }
-
-  void _handleGlobalToggleTracking() {
-    if (_isTracking) {
-      _stopTracking();
-    } else if (_tasks.isNotEmpty) {
-      // Start the first task as a default global action
-      _startTracking(_tasks.first.title);
-    }
   }
 
   Future<void> _loadTrackingState() async {
@@ -247,7 +225,6 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                 Divider(color: onSurface.withOpacity(0.05)),
                 const SizedBox(height: 16),
                 _buildShortcutRow('⌥ + Space', 'Toggle Hide/Show App (Global)'),
-                _buildShortcutRow('⌥ + S', 'Toggle Tracking (Global)'),
                 const SizedBox(height: 12),
                 _buildShortcutRow('⌘ + N', 'New Task'),
                 _buildShortcutRow('⌘ + F', 'Search Tasks'),
