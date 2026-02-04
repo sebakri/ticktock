@@ -9,18 +9,21 @@ void main() async {
   await windowManager.ensureInitialized();
   await windowManager.setPreventClose(true);
 
-  // Restore last window size
+  // Restore last window size or use minimal default
   final savedSize = await TaskService.instance.getWindowSize();
-  final initialSize = savedSize ?? const Size(1000, 800);
+  const minimalSize = Size(400, 800);
+  final initialSize = savedSize ?? minimalSize;
 
   WindowOptions windowOptions = WindowOptions(
     size: initialSize,
+    minimumSize: minimalSize,
     center: savedSize == null, // Only center if it's the first run
     backgroundColor: Colors.transparent,
     skipTaskbar: false,
     titleBarStyle: TitleBarStyle.hidden,
   );
   windowManager.waitUntilReadyToShow(windowOptions, () async {
+    await windowManager.setMinimumSize(minimalSize);
     await windowManager.show();
     await windowManager.focus();
   });
