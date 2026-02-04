@@ -4,11 +4,15 @@ import 'package:flutter/material.dart';
 import '../models/task.dart';
 import '../models/time_block.dart';
 
-class DatabaseService {
-  static final DatabaseService instance = DatabaseService._init();
+class TaskService {
+  static TaskService _instance = TaskService._init();
+  static TaskService get instance => _instance;
+  static set instance(TaskService value) => _instance = value;
+  
   static Database? _database;
 
-  DatabaseService._init();
+  TaskService._init();
+  TaskService(); // Public constructor for mocking
 
   Future<Database> get database async {
     if (_database != null) return _database!;

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'app.dart';
-import 'services/database_service.dart';
+import 'services/task_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -10,7 +10,7 @@ void main() async {
   await windowManager.setPreventClose(true);
 
   // Restore last window size
-  final savedSize = await DatabaseService.instance.getWindowSize();
+  final savedSize = await TaskService.instance.getWindowSize();
   final initialSize = savedSize ?? const Size(1000, 800);
 
   WindowOptions windowOptions = WindowOptions(
