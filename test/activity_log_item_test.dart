@@ -49,7 +49,7 @@ void main() {
     );
 
     // Should find the today session
-    expect(find.text('10:00 AM - 11:00 AM'), findsOneWidget);
+    expect(find.text('10:00 - 11:00'), findsOneWidget);
     // Should NOT find the yesterday session
     expect(find.text('Yesterday Session'), findsNothing);
   });

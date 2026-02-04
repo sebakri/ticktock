@@ -7,6 +7,7 @@ class Task {
   String description;
   Color color;
   final List<TimeBlock> blocks;
+  final List<String> tags;
 
   Task({
     this.id,
@@ -14,9 +15,12 @@ class Task {
     this.description = '',
     required this.color,
     List<TimeBlock>? blocks,
-  }) : blocks = blocks ?? [];
+    List<String>? tags,
+  })  : blocks = blocks ?? [],
+        tags = tags ?? [];
 
-  Duration get totalDuration => blocks.fold(Duration.zero, (sum, block) => sum + block.duration);
+  Duration get totalDuration =>
+      blocks.fold(Duration.zero, (sum, block) => sum + block.duration);
 
   Duration durationOn(DateTime date) {
     return blocks
@@ -27,8 +31,12 @@ class Task {
         .fold(Duration.zero, (sum, block) => sum + block.duration);
   }
 
-  DateTime get firstStartTime => blocks.isEmpty ? DateTime.now() : blocks.map((b) => b.startTime).reduce((a, b) => a.isBefore(b) ? a : b);
-  DateTime get lastEndTime => blocks.isEmpty ? DateTime.now() : blocks.map((b) => b.endTime).reduce((a, b) => a.isAfter(b) ? a : b);
+  DateTime get firstStartTime => blocks.isEmpty
+      ? DateTime.now()
+      : blocks.map((b) => b.startTime).reduce((a, b) => a.isBefore(b) ? a : b);
+  DateTime get lastEndTime => blocks.isEmpty
+      ? DateTime.now()
+      : blocks.map((b) => b.endTime).reduce((a, b) => a.isAfter(b) ? a : b);
 
   Map<String, dynamic> toMap() {
     return {
@@ -36,16 +44,19 @@ class Task {
       'title': title,
       'description': description,
       'color': color.value,
+      'tags': tags.join(','),
     };
   }
 
   factory Task.fromMap(Map<String, dynamic> map, List<TimeBlock> blocks) {
+    final tagsStr = map['tags'] as String? ?? '';
     return Task(
       id: map['id'],
       title: map['title'],
       description: map['description'],
       color: Color(map['color']),
       blocks: blocks,
+      tags: tagsStr.isEmpty ? [] : tagsStr.split(','),
     );
   }
 }

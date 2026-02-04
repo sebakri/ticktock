@@ -20,7 +20,7 @@ void main() {
       home: AddTaskDialog(
         palette: palette,
         existingTitles: existingTitles,
-        onSave: (t, d, c) {
+        onSave: (t, d, c, tags) {
           savedTitle = t;
           savedDesc = d;
           savedColor = c;

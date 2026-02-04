@@ -108,7 +108,7 @@ class _EditSessionDialogState extends State<EditSessionDialog> {
     final theme = Theme.of(context);
     final onSurface = theme.colorScheme.onSurface;
     final dateFormat = DateFormat('EEEE, MMMM d, y');
-    final timeFormat = DateFormat('hh:mm a');
+    final timeFormat = DateFormat('HH:mm');
 
     void handleSave() {
       if (_nameController.text.trim().isEmpty) return;

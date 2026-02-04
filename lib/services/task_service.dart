@@ -26,7 +26,7 @@ class TaskService {
 
     return await openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -51,6 +51,9 @@ class TaskService {
         )
       ''');
     }
+    if (oldVersion < 4) {
+      await db.execute('ALTER TABLE tasks ADD COLUMN tags TEXT');
+    }
   }
 
   Future _createDB(Database db, int version) async {
@@ -59,7 +62,8 @@ class TaskService {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT NOT NULL,
         description TEXT,
-        color INTEGER NOT NULL
+        color INTEGER NOT NULL,
+        tags TEXT
       )
     ''');
 

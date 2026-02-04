@@ -7,6 +7,7 @@ class TaskTile extends StatefulWidget {
   final Task task;
   final String? shortcutLabel;
   final VoidCallback onTap;
+  final Function(String)? onTagTap;
   final bool isTracking;
   final Function(TimeBlock)? onAcceptTimeBlock;
 
@@ -15,6 +16,7 @@ class TaskTile extends StatefulWidget {
     required this.task,
     this.shortcutLabel,
     required this.onTap,
+    this.onTagTap,
     this.isTracking = false,
     this.onAcceptTimeBlock,
   });
@@ -24,8 +26,6 @@ class TaskTile extends StatefulWidget {
 }
 
 class _TaskTileState extends State<TaskTile> {
-  bool _isHovering = false;
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -130,6 +130,31 @@ class _TaskTileState extends State<TaskTile> {
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                      if (widget.task.tags.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 4,
+                          runSpacing: 4,
+                          children: widget.task.tags.map((tag) => GestureDetector(
+                            onTap: widget.onTagTap != null ? () => widget.onTagTap!(tag) : null,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: widget.task.color.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                '#$tag',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: widget.task.color.withOpacity(0.8),
+                                ),
+                              ),
+                            ),
+                          )).toList(),
                         ),
                       ],
                       const Spacer(),
