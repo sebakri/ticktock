@@ -9,7 +9,6 @@ These work even when TickTock is not the active window.
 | Shortcut | Action |
 | :--- | :--- |
 | `⌥ + Space` | Toggle Show/Hide TickTock |
-| `⌥ + S` | Toggle Tracking (Starts first task if none active) |
 
 ## App Shortcuts
 
@@ -19,7 +18,7 @@ These work when TickTock is focused.
 | :--- | :--- |
 | `⌘ + N` | Create New Task |
 | `⌘ + F` | Search Tasks |
-| `⌘ + S` | Toggle Tracking for selected task |
+| `⌘ + S` | Toggle Tracking (resumes last active task) |
 | `⌘ + T` | Jump to Today |
 | `⌘ + D` | Jump to Date |
 | `⌘ + 1-9` | Start tracking task from Activity Log |
