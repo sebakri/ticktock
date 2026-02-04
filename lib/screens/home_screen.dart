@@ -14,7 +14,7 @@ import '../widgets/home/day_timeline.dart';
 import '../widgets/home/activity_log_item.dart';
 import '../widgets/home/task_tile.dart';
 import '../widgets/shortcut_badge.dart';
-import '../services/database_service.dart';
+import '../services/task_service.dart';
 import '../app.dart';
 
 class AddTaskIntent extends Intent {
@@ -155,7 +155,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
   }
 
   Future<void> _loadTrackingState() async {
-    final state = await DatabaseService.instance.getTrackingState();
+    final state = await TaskService.instance.getTrackingState();
     if (state != null) {
       setState(() {
         _taskController.text = state['title'];
@@ -189,11 +189,11 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
   @override
   void onWindowResized() async {
     final size = await windowManager.getSize();
-    await DatabaseService.instance.saveWindowSize(size.width, size.height);
+    await TaskService.instance.saveWindowSize(size.width, size.height);
   }
 
   Future _refreshTasks() async {
-    final tasks = await DatabaseService.instance.getTasks();
+    final tasks = await TaskService.instance.getTasks();
     setState(() {
       _tasks = tasks;
       _isLoading = false;
@@ -378,7 +378,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
             description: description,
             color: color,
           );
-          await DatabaseService.instance.createTask(newTask);
+          await TaskService.instance.createTask(newTask);
           _refreshTasks();
         },
       ),
@@ -393,7 +393,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
   }
 
   Future<void> _jumpToDate() async {
-    final dates = await DatabaseService.instance.getSessionDates();
+    final dates = await TaskService.instance.getSessionDates();
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final selected = DateTime(
@@ -442,12 +442,12 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
     final existingTaskIndex = _tasks.indexWhere((t) => t.title == title);
     if (existingTaskIndex == -1) {
       final newTask = Task(title: title, color: _getNextColor());
-      await DatabaseService.instance.createTask(newTask);
+      await TaskService.instance.createTask(newTask);
       await _refreshTasks();
     }
 
     final startTime = DateTime.now();
-    await DatabaseService.instance.saveTrackingState(title, startTime);
+    await TaskService.instance.saveTrackingState(title, startTime);
 
     _taskController.text = title;
     setState(() {
@@ -481,10 +481,10 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
         startTime: _trackingStartTime!,
         endTime: endTime,
       );
-      await DatabaseService.instance.createTimeBlock(block);
+      await TaskService.instance.createTimeBlock(block);
     }
 
-    await DatabaseService.instance.clearTrackingState();
+    await TaskService.instance.clearTrackingState();
 
     setState(() {
       _isTracking = false;
@@ -514,7 +514,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
           task.title = title;
           task.description = description;
           task.color = color;
-          await DatabaseService.instance.updateTask(task);
+          await TaskService.instance.updateTask(task);
           _refreshTasks();
         },
         onDelete: () {
@@ -534,21 +534,27 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
       context: context,
       builder: (context) => EditSessionDialog(
         block: block,
-        onSave: (newName) async {
+        onSave: (newName, newStart, newEnd) async {
           block.name = newName;
-          await DatabaseService.instance.updateTimeBlock(block);
+          final updatedBlock = TimeBlock(
+            id: block.id,
+            taskId: block.taskId,
+            name: newName,
+            startTime: newStart,
+            endTime: newEnd,
+          );
+          await TaskService.instance.updateTimeBlock(updatedBlock);
           _refreshTasks();
         },
       ),
     );
   }
 
-  void _deleteTimeBlock(Task task, int blockIndex) async {
-    final block = task.blocks[blockIndex];
+  void _deleteTimeBlock(Task task, TimeBlock block) async {
     if (block.id != null) {
-      await DatabaseService.instance.deleteTimeBlock(block.id!);
+      await TaskService.instance.deleteTimeBlock(block.id!);
       if (task.blocks.length == 1) {
-        await DatabaseService.instance.deleteTask(task.id!);
+        await TaskService.instance.deleteTask(task.id!);
       }
       _refreshTasks();
     }
@@ -556,8 +562,35 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
 
   void _deleteTask(Task task) async {
     if (task.id != null) {
-      await DatabaseService.instance.deleteTask(task.id!);
+      await TaskService.instance.deleteTask(task.id!);
       _refreshTasks();
+    }
+  }
+
+  void _moveTimeBlockToTask(TimeBlock block, Task targetTask) async {
+    if (block.taskId == targetTask.id) return;
+
+    final oldTaskId = block.taskId;
+    block.taskId = targetTask.id;
+    await TaskService.instance.updateTimeBlock(block);
+
+    // If the old task has no more blocks, we might want to delete it if it's not a "library" task?
+    // Actually, the current logic seems to keep tasks in library.
+    
+    // If we moved the last block of a task that was created automatically (no title/description?)
+    // but here all tasks have titles.
+    
+    _refreshTasks();
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Moved session to ${targetTask.title}'),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          width: 300,
+        ),
+      );
     }
   }
 
@@ -842,7 +875,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                                     const SizedBox(height: 24),
                                     DayTimeline(
                                       selectedDate: _selectedDate,
-                                      tasks: _tasks,
+                                      tasks: todayTasks,
                                       isTracking: _isTracking,
                                       trackingStartTime: _trackingStartTime,
                                       trackingTaskTitle: _taskController.text
@@ -878,6 +911,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
 
                                     return ActivityLogItem(
                                       task: task,
+                                      selectedDate: _selectedDate,
                                       isTracking: isTrackingThisTask,
                                       activeDuration: activeDuration,
                                       dailyDuration: task.durationOn(
@@ -906,8 +940,10 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                                           _onStartTracking(task.title),
                                       onEditBlock: (block) =>
                                           _editTimeBlock(task, block),
-                                      onDeleteBlock: (blockIndex) =>
-                                          _deleteTimeBlock(task, blockIndex),
+                                      onDeleteBlock: (block) =>
+                                          _deleteTimeBlock(task, block),
+                                      onAcceptTimeBlock: (block) =>
+                                          _moveTimeBlockToTask(block, task),
                                     );
                                   }, childCount: todayTasks.length),
                                 ),
@@ -955,6 +991,8 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                                       isTracking: isTrackingThisTask,
                                       shortcutLabel: shortcutLabel,
                                       onTap: () => _editTask(task),
+                                      onAcceptTimeBlock: (block) =>
+                                          _moveTimeBlockToTask(block, task),
                                     );
                                   }, childCount: libraryTasks.length),
                                 ),
