@@ -303,7 +303,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
     final onSurface = theme.colorScheme.onSurface;
 
     return Padding(
-      padding: const EdgeInsets.only(top: 48, bottom: 16),
+      padding: const EdgeInsets.only(top: 16, bottom: 16),
       child: Row(
         children: [
           Icon(icon, size: 16, color: onSurface.withOpacity(0.3)),
