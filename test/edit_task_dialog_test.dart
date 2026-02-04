@@ -22,7 +22,7 @@ void main() {
         body: EditTaskDialog(
           task: task,
           palette: const [Colors.blue, Colors.red],
-          onSave: (t, d, c) {},
+          onSave: (t, d, c, tags) {},
           onDelete: () {},
           onStart: () {},
         ),

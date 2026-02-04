@@ -83,7 +83,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Open Start Time Picker
-    await tester.tap(find.text('10:00 AM'));
+    await tester.tap(find.text('10:00'));
     await tester.pumpAndSettle();
     expect(find.byType(TimePickerDialog), findsOneWidget);
     await tester.tap(find.text('OK'));

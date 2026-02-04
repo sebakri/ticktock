@@ -5,7 +5,7 @@ import 'shortcut_badge.dart';
 class AddTaskDialog extends StatefulWidget {
   final List<Color> palette;
   final List<String> existingTitles;
-  final Function(String, String, Color) onSave;
+  final Function(String title, String description, Color color, List<String> tags) onSave;
 
   const AddTaskDialog({
     super.key,
@@ -21,6 +21,7 @@ class AddTaskDialog extends StatefulWidget {
 class _AddTaskDialogState extends State<AddTaskDialog> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
+  final TextEditingController _tagsController = TextEditingController();
   late Color _selectedColor;
   String? _errorMessage;
 
@@ -49,6 +50,7 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
     _nameController.removeListener(_validate);
     _nameController.dispose();
     _descController.dispose();
+    _tagsController.dispose();
     super.dispose();
   }
 
@@ -59,8 +61,15 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
 
     void handleSave() {
       if (_nameController.text.trim().isEmpty || _errorMessage != null) return;
+      
+      final tags = _tagsController.text
+          .split(RegExp(r'[\s,]+'))
+          .where((t) => t.isNotEmpty)
+          .map((t) => t.startsWith('#') ? t.substring(1) : t)
+          .toList();
+
       widget.onSave(_nameController.text.trim(), _descController.text.trim(),
-          _selectedColor);
+          _selectedColor, tags);
       Navigator.pop(context);
     }
 
@@ -147,6 +156,19 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
                 _buildTextField(
                     _descController, 'What is this task about?', onSurface,
                     maxLines: 3),
+                const SizedBox(height: 24),
+                Text(
+                  'TAGS (OPTIONAL)',
+                  style: TextStyle(
+                    color: onSurface.withOpacity(0.25),
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _buildTextField(
+                    _tagsController, 'e.g. #work #private', onSurface),
                 const SizedBox(height: 24),
                 Text(
                   'COLOR',

@@ -51,4 +51,39 @@ void main() {
     expect(find.text('Alpha'), findsWidgets);
     expect(find.text('Beta'), findsWidgets);
   });
+
+  testWidgets('HomeScreen tag filtering logic', (WidgetTester tester) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 1200));
+    
+    final tasks = [
+      Task(id: 1, title: 'WorkTask', color: Colors.blue, tags: ['work']),
+      Task(id: 2, title: 'HomeTask', color: Colors.red, tags: ['home']),
+    ];
+    when(() => mockTaskService.getTasks()).thenAnswer((_) async => tasks);
+
+    await tester.pumpWidget(const TickTockApp());
+    await tester.pumpAndSettle();
+
+    // Verify both tasks are visible
+    expect(find.text('WorkTask'), findsWidgets);
+    expect(find.text('HomeTask'), findsWidgets);
+
+    // Find and tap the #work tag chip in the filter bar
+    final workChip = find.text('#work');
+    expect(workChip, findsWidgets); // One in filter bar, one in TaskTile
+    await tester.tap(workChip.first); // Tap the one in filter bar
+    await tester.pumpAndSettle();
+
+    // Verify only WorkTask is visible
+    expect(find.text('WorkTask'), findsWidgets);
+    expect(find.text('HomeTask'), findsNothing);
+
+    // Tap #work again to clear filter
+    await tester.tap(workChip.first);
+    await tester.pumpAndSettle();
+
+    // Verify both are visible again
+    expect(find.text('WorkTask'), findsWidgets);
+    expect(find.text('HomeTask'), findsWidgets);
+  });
 }

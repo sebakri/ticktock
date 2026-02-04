@@ -17,6 +17,7 @@ class ActivityLogItem extends StatefulWidget {
   final Function(TimeBlock) onEditBlock;
   final Function(TimeBlock) onDeleteBlock;
   final Function(TimeBlock)? onAcceptTimeBlock;
+  final Function(String)? onTagTap;
   final bool isFirst;
   final bool isLast;
 
@@ -34,6 +35,7 @@ class ActivityLogItem extends StatefulWidget {
     required this.onEditBlock,
     required this.onDeleteBlock,
     this.onAcceptTimeBlock,
+    this.onTagTap,
     this.isFirst = false,
     this.isLast = false,
   });
@@ -43,15 +45,13 @@ class ActivityLogItem extends StatefulWidget {
 }
 
 class _ActivityLogItemState extends State<ActivityLogItem> {
-  bool _isHovering = false;
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final total = widget.dailyDuration + widget.activeDuration;
     final durationStr =
         '${total.inHours}h ${(total.inMinutes % 60).toString().padLeft(2, '0')}m';
-    final timeFormat = DateFormat('hh:mm a');
+    final timeFormat = DateFormat('HH:mm');
 
     final dayBlocks = widget.task.blocks.where((b) {
       final s = b.startTime;
@@ -200,6 +200,31 @@ class _ActivityLogItemState extends State<ActivityLogItem> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
+                          if (widget.task.tags.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Wrap(
+                              spacing: 4,
+                              runSpacing: 4,
+                              children: widget.task.tags.map((tag) => GestureDetector(
+                                onTap: widget.onTagTap != null ? () => widget.onTagTap!(tag) : null,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: widget.task.color.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    '#$tag',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                      color: widget.task.color.withOpacity(0.8),
+                                    ),
+                                  ),
+                                ),
+                              )).toList(),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -265,7 +290,7 @@ class _ActivityLogItemState extends State<ActivityLogItem> {
   }
 
   Widget _buildActiveSessionRow(ThemeData theme, Color onSurface, double secondaryOpacity) {
-    final timeFormat = DateFormat('hh:mm a');
+    final timeFormat = DateFormat('HH:mm');
     final startTime = DateTime.now().subtract(widget.activeDuration);
     final durationStr = '${widget.activeDuration.inMinutes}m';
 
@@ -322,7 +347,7 @@ class _ActivityLogItemState extends State<ActivityLogItem> {
 
   Widget _buildSessionRow(TimeBlock block, ThemeData theme,
       Color onSurface, double secondaryOpacity) {
-    final timeFormat = DateFormat('hh:mm a');
+    final timeFormat = DateFormat('HH:mm');
     final duration = block.duration;
     final durationStr = '${duration.inMinutes}m';
 

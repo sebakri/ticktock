@@ -6,7 +6,7 @@ import 'shortcut_badge.dart';
 class EditTaskDialog extends StatefulWidget {
   final Task task;
   final List<Color> palette;
-  final Function(String, String, Color) onSave;
+  final Function(String title, String description, Color color, List<String> tags) onSave;
   final VoidCallback onDelete;
   final VoidCallback onStart;
 
@@ -26,6 +26,7 @@ class EditTaskDialog extends StatefulWidget {
 class _EditTaskDialogState extends State<EditTaskDialog> {
   late TextEditingController _nameController;
   late TextEditingController _descController;
+  late TextEditingController _tagsController;
   late Color _selectedColor;
   bool _showDeleteConfirm = false;
 
@@ -34,6 +35,8 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
     super.initState();
     _nameController = TextEditingController(text: widget.task.title);
     _descController = TextEditingController(text: widget.task.description);
+    _tagsController = TextEditingController(
+        text: widget.task.tags.map((t) => '#$t').join(' '));
     _selectedColor = widget.task.color;
   }
 
@@ -41,6 +44,7 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
   void dispose() {
     _nameController.dispose();
     _descController.dispose();
+    _tagsController.dispose();
     super.dispose();
   }
 
@@ -51,8 +55,15 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
 
     void handleSave() {
       if (_nameController.text.trim().isEmpty) return;
+
+      final tags = _tagsController.text
+          .split(RegExp(r'[\s,]+'))
+          .where((t) => t.isNotEmpty)
+          .map((t) => t.startsWith('#') ? t.substring(1) : t)
+          .toList();
+
       widget.onSave(
-          _nameController.text, _descController.text, _selectedColor);
+          _nameController.text, _descController.text, _selectedColor, tags);
       Navigator.pop(context);
     }
 
@@ -141,6 +152,18 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
                 _buildTextField(
                     _descController, 'Wireframing new layout concepts', onSurface,
                     maxLines: 3),
+                const SizedBox(height: 24),
+                Text(
+                  'TAGS (OPTIONAL)',
+                  style: TextStyle(
+                    color: onSurface.withOpacity(0.25),
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _buildTextField(_tagsController, 'e.g. #work #private', onSurface),
                 const SizedBox(height: 24),
                 Text(
                   'COLOR',

@@ -48,6 +48,32 @@ void main() {
       expect(tasks.isEmpty, true);
     });
 
+    test('Create and Get Task with Tags', () async {
+      final task = Task(
+        title: 'Tagged Task',
+        color: Colors.blue,
+        tags: ['work', 'urgent'],
+      );
+      final id = await taskService.createTask(task);
+      expect(id, isNotNull);
+
+      final tasks = await taskService.getTasks();
+      expect(tasks.length, 1);
+      expect(tasks.first.tags, containsAll(['work', 'urgent']));
+    });
+
+    test('Update Task Tags', () async {
+      final task = Task(title: 'T', color: Colors.blue, tags: ['a']);
+      final id = await taskService.createTask(task);
+      task.id = id;
+      task.tags.clear();
+      task.tags.add('b');
+
+      await taskService.updateTask(task);
+      final tasks = await taskService.getTasks();
+      expect(tasks.first.tags, equals(['b']));
+    });
+
     test('Create and Get TimeBlock', () async {
       final task = Task(title: 'Task for Block', color: Colors.green);
       final taskId = await taskService.createTask(task);

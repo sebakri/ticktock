@@ -74,6 +74,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
   List<Task> _tasks = [];
   bool _isLoading = true;
   String _searchQuery = '';
+  String? _selectedTag;
   final Set<int> _expandedActivityIds = {};
 
   static const List<Color> _palette = [
@@ -349,11 +350,12 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
       builder: (context) => AddTaskDialog(
         palette: availablePalette.isEmpty ? _palette : availablePalette,
         existingTitles: existingTitles,
-        onSave: (title, description, color) async {
+        onSave: (title, description, color, tags) async {
           final newTask = Task(
             title: title,
             description: description,
             color: color,
+            tags: tags,
           );
           await TaskService.instance.createTask(newTask);
           _refreshTasks();
@@ -487,10 +489,12 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
       builder: (context) => EditTaskDialog(
         task: task,
         palette: availablePalette,
-        onSave: (title, description, color) async {
+        onSave: (title, description, color, tags) async {
           task.title = title;
           task.description = description;
           task.color = color;
+          task.tags.clear();
+          task.tags.addAll(tags);
           await TaskService.instance.updateTask(task);
           _refreshTasks();
         },
@@ -574,6 +578,12 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
   @override
   Widget build(BuildContext context) {
     final filteredTasks = _tasks.where((task) {
+      // 1. Tag Filter
+      if (_selectedTag != null && !task.tags.contains(_selectedTag)) {
+        return false;
+      }
+
+      // 2. Search Filter
       if (_searchQuery.isEmpty) return true;
       final title = task.title.toLowerCase();
       final desc = task.description.toLowerCase();
@@ -860,6 +870,8 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                                       palette: _palette,
                                     ),
                                     const SizedBox(height: 16),
+                                    _buildTagFilterBar(),
+                                    const SizedBox(height: 16),
                                   ],
                                 ),
                               ),
@@ -921,6 +933,9 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                                           _deleteTimeBlock(task, block),
                                       onAcceptTimeBlock: (block) =>
                                           _moveTimeBlockToTask(block, task),
+                                      onTagTap: (tag) => setState(() {
+                                        _selectedTag = (_selectedTag == tag) ? null : tag;
+                                      }),
                                     );
                                   }, childCount: todayTasks.length),
                                 ),
@@ -970,6 +985,9 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                                       onTap: () => _editTask(task),
                                       onAcceptTimeBlock: (block) =>
                                           _moveTimeBlockToTask(block, task),
+                                      onTagTap: (tag) => setState(() {
+                                        _selectedTag = (_selectedTag == tag) ? null : tag;
+                                      }),
                                     );
                                   }, childCount: libraryTasks.length),
                                 ),
@@ -980,6 +998,57 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTagFilterBar() {
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+    
+    final allTags = _tasks.expand((t) => t.tags).toSet().toList()..sort();
+    
+    if (allTags.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      height: 32,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          _buildTagChip('All', _selectedTag == null, () => setState(() => _selectedTag = null), onSurface),
+          const SizedBox(width: 8),
+          ...allTags.map((tag) => Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: _buildTagChip('#$tag', _selectedTag == tag, () => setState(() {
+              _selectedTag = (_selectedTag == tag) ? null : tag;
+            }), onSurface),
+          )),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTagChip(String label, bool isSelected, VoidCallback onTap, Color onSurface) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF4F46E5) : onSurface.withOpacity(0.03),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? Colors.transparent : onSurface.withOpacity(0.05),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: isSelected ? Colors.white : onSurface.withOpacity(0.5),
           ),
         ),
       ),
