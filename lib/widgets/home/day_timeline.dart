@@ -88,16 +88,22 @@ class DayTimeline extends StatelessWidget {
 
     return LayoutBuilder(builder: (context, constraints) {
       final double width = constraints.maxWidth;
+      const double labelWidth = 50.0;
 
-      // 1. Generate candidate labels at 30-minute intervals
-      List<DateTime> labels30 = _generateLabels(timelineStart, timelineEnd, 30);
-      List<DateTime> finalLabels = _filterLabels(labels30, timelineStart, timelineEnd);
-
-      // 2. Check if 30-minute labels are too crowded (assuming ~60px per label for safety)
-      if (finalLabels.length * 60 > width) {
-        // Fallback to 60-minute intervals
-        List<DateTime> labels60 = _generateLabels(timelineStart, timelineEnd, 60);
-        finalLabels = _filterLabels(labels60, timelineStart, timelineEnd);
+      // Use a fixed amount of labels to ensure equal spacing across the timeline
+      final int count = width > 600 ? 7 : (width > 400 ? 5 : 3);
+      final List<DateTime> finalLabels = [];
+      
+      for (int i = 0; i < count; i++) {
+        final double percent = i / (count - 1);
+        final int seconds = (percent * totalTimelineSeconds).round();
+        DateTime time = timelineStart.add(Duration(seconds: seconds));
+        
+        // Round to nearest minute for cleaner display (except for absolute start/end)
+        if (i > 0 && i < count - 1) {
+          time = DateTime(time.year, time.month, time.day, time.hour, time.minute);
+        }
+        finalLabels.add(time);
       }
 
       return Column(
@@ -116,68 +122,28 @@ class DayTimeline extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          _buildTimeLabels(onSurface, isDark, timelineStart, timelineEnd, totalTimelineSeconds, finalLabels, width),
+          _buildTimeLabels(onSurface, isDark, timelineStart, timelineEnd, totalTimelineSeconds, finalLabels, width, labelWidth),
         ],
       );
     });
   }
 
-  List<DateTime> _generateLabels(DateTime start, DateTime end, int intervalMinutes) {
-    List<DateTime> labels = [start];
-    DateTime current = DateTime(start.year, start.month, start.day, start.hour, (start.minute ~/ intervalMinutes) * intervalMinutes);
-    if (current.isBefore(start)) {
-      current = current.add(Duration(minutes: intervalMinutes));
-    }
-
-    while (current.isBefore(end)) {
-      if (!labels.any((l) => l.isAtSameMomentAs(current))) {
-        labels.add(current);
-      }
-      current = current.add(Duration(minutes: intervalMinutes));
-    }
-    if (!labels.any((l) => l.isAtSameMomentAs(end))) {
-      labels.add(end);
-    }
-    labels.sort();
-    return labels;
-  }
-
-  List<DateTime> _filterLabels(List<DateTime> labels, DateTime start, DateTime end) {
-    if (labels.isEmpty) return [];
-    List<DateTime> result = [labels.first];
-    for (int i = 1; i < labels.length - 1; i++) {
-      // Ensure at least 10 minutes separation from first and last
-      if (labels[i].difference(result.last).inMinutes >= 10 &&
-          labels.last.difference(labels[i]).inMinutes >= 10) {
-        result.add(labels[i]);
-      }
-    }
-    if (labels.length > 1) {
-      result.add(labels.last);
-    }
-    return result;
-  }
-
-  Widget _buildTimeLabels(Color onSurface, bool isDark, DateTime timelineStart, DateTime timelineEnd, double totalTimelineSeconds, List<DateTime> finalLabels, double width) {
+  Widget _buildTimeLabels(Color onSurface, bool isDark, DateTime timelineStart, DateTime timelineEnd, double totalTimelineSeconds, List<DateTime> finalLabels, double width, double labelWidth) {
     return SizedBox(
       height: 16,
       child: Stack(
         children: finalLabels.asMap().entries.map((entry) {
           final index = entry.key;
           final time = entry.value;
-          final seconds = time.difference(timelineStart).inSeconds.toDouble();
-          final percent = seconds / totalTimelineSeconds;
           
-          const double labelWidth = 50;
+          // Place labels at exact visual divisions
+          final double percent = index / (finalLabels.length - 1);
           double left = percent * width - (labelWidth / 2);
           
           if (index == 0) {
             left = 0;
           } else if (index == finalLabels.length - 1) {
             left = width - labelWidth;
-          } else {
-            if (left < 10) left = 10;
-            if (left + labelWidth > width - 10) left = width - labelWidth - 10;
           }
 
           return Positioned(
@@ -204,10 +170,10 @@ class DayTimeline extends StatelessWidget {
       double totalWidth = constraints.maxWidth;
       List<Widget> bars = [];
       
-      // 1. Grid Lines (Ticks)
-      for (var labelTime in finalLabels) {
-        double seconds = labelTime.difference(timelineStart).inSeconds.toDouble();
-        double left = (seconds / totalTimelineSeconds) * totalWidth;
+      // 1. Grid Lines (Ticks) - Now perfectly equally spaced
+      for (int i = 0; i < finalLabels.length; i++) {
+        final double percent = i / (finalLabels.length - 1);
+        double left = percent * totalWidth;
         bars.add(
           Positioned(
             left: left,
