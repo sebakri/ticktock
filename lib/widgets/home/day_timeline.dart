@@ -53,10 +53,7 @@ class DayTimeline extends StatelessWidget {
     }
 
     if (firstActivityTime != null) {
-      timelineStart = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, firstActivityTime.hour, firstActivityTime.minute);
-      if (timelineStart.isBefore(DateTime(selectedDate.year, selectedDate.month, selectedDate.day, 0, 0))) {
-        timelineStart = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, 0, 0);
-      }
+      timelineStart = firstActivityTime;
     }
 
     // Find the latest end time on the selected day
@@ -83,10 +80,7 @@ class DayTimeline extends StatelessWidget {
     }
 
     if (lastActivityTime != null) {
-      timelineEnd = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, lastActivityTime.hour, lastActivityTime.minute);
-      if (timelineEnd.isAfter(DateTime(selectedDate.year, selectedDate.month, selectedDate.day, 23, 59, 59))) {
-        timelineEnd = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, 23, 59, 59);
-      }
+      timelineEnd = lastActivityTime;
     }
 
     final totalTimelineSeconds = timelineEnd.difference(timelineStart).inSeconds.toDouble();
