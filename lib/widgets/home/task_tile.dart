@@ -43,14 +43,8 @@ class _TaskTileState extends State<TaskTile> {
           widget.onAcceptTimeBlock!(data);
         }
       },
-      onMove: (_) {
-        if (!_isHovering) setState(() => _isHovering = true);
-      },
-      onLeave: (_) {
-        if (_isHovering) setState(() => _isHovering = false);
-      },
       builder: (context, candidateData, rejectedData) {
-        final isDraggingOver = candidateData.isNotEmpty || _isHovering;
+        final isDraggingOver = candidateData.isNotEmpty;
 
         return GestureDetector(
           onTap: widget.onTap,

@@ -80,22 +80,24 @@ class _ActivityLogItemState extends State<ActivityLogItem> {
           widget.onAcceptTimeBlock!(data);
         }
       },
-      onMove: (_) {
-        if (!_isHovering) setState(() => _isHovering = true);
-      },
-      onLeave: (_) {
-        if (_isHovering) setState(() => _isHovering = false);
-      },
       builder: (context, candidateData, rejectedData) {
-        final isDraggingOver = candidateData.isNotEmpty || _isHovering;
+        final isDraggingOver = candidateData.isNotEmpty;
 
         return AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
             color: isDraggingOver
-                ? widget.task.color.withOpacity(0.05)
-                : Colors.transparent,
+                ? widget.task.color.withOpacity(0.1)
+                : widget.isTracking
+                    ? widget.task.color.withOpacity(0.03)
+                    : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isDraggingOver 
+                  ? widget.task.color.withOpacity(0.2) 
+                  : Colors.transparent,
+              width: 1,
+            ),
           ),
           child: Column(
             children: [
