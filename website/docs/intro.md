@@ -15,7 +15,7 @@ Currently, TickTock is available as a macOS application. You can download the la
 
 ## First Launch
 
-When you first launch TickTock, you'll see an empty activity log.
+When you first launch TickTock, you'll see an empty activity log and your task library.
 
 1. **Create a Task**: Click the "New Task" button or press `⌘ + N`.
 2. **Start Tracking**: Click the play icon on a task or use the shortcut assigned to it.
