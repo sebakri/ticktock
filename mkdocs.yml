@@ -27,8 +27,9 @@ theme:
     - search.highlight
     - content.code.copy
   # Include our custom styles to implement the new documentation design
-extra_css:
-  - site/stylesheets/extra.css
+  # Use the tracked stylesheet in docs/assets so it is included in the build
+  extra_css:
+    - docs/assets/stylesheets/extra.css
 
 markdown_extensions:
   - admonition
