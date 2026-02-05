@@ -4,10 +4,10 @@ title: Home
 
 <section class="hero-section">
   <div class="container">
-    <header style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
-      <div style="display:flex;align-items:center;gap:12px;">
-        <div style="width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#7c83ff,#9ee7c5);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;box-shadow:0 6px 18px rgba(99,102,241,0.12);">T</div>
-        <div style="font-weight:700;font-size:18px;">TickTock <span style="color:#4f46e5;font-weight:600;margin-left:6px;">Help</span></div>
+    <header class="hero-header">
+      <div class="hero-left">
+        <div class="logo">T</div>
+        <div class="site-title">TickTock <span class="site-help">Help</span></div>
       </div>
       <div>
         <a class="md-button md-button--primary" href="https://github.com/sebakri/ticktock" target="_blank">GitHub</a>
@@ -20,7 +20,7 @@ title: Home
     <div class="search-container">
       <div class="search-box">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 21l-4.35-4.35" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="11" cy="11" r="6" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <input class="search-input" placeholder="Search for shortcuts, features, or setup guide..." />
+        <input class="search-input" type="search" aria-label="Search documentation" placeholder="Search for shortcuts, features, or setup guide..." />
         <div class="kbd-hint">⌘ K</div>
       </div>
     </div>

@@ -3,6 +3,11 @@
   --md-primary-fg-color: #4f46e5;
 }
 
+/* Use the Plus Jakarta Sans font for the docs site */
+body, .md-main, .md-content {
+  font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
 .md-main__inner {
   margin-top: 0;
 }
@@ -19,6 +24,40 @@
               #f8fafc;
   margin: -1.5rem -0.8rem 4rem;
 }
+
+/* Header inside the hero */
+.hero-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.hero-header .hero-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: linear-gradient(135deg,#7c83ff,#9ee7c5);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 20px;
+  box-shadow: 0 6px 18px rgba(99,102,241,0.12);
+}
+
+.site-title {
+  font-weight: 700;
+  font-size: 18px;
+}
+.site-title .site-help { color: #4f46e5; font-weight: 600; margin-left: 6px; }
 
 [data-md-color-scheme="slate"] .hero-section {
   background: radial-gradient(circle at top, #1e1b4b 0%, #0f172a 100%);
