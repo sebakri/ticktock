@@ -14,7 +14,9 @@
 .hero-section {
   padding: 6rem 1rem;
   text-align: center;
-  background: radial-gradient(circle at top, #eef2ff 0%, #f8fafc 100%);
+  background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.08), transparent),
+              radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.08), transparent),
+              #f8fafc;
   margin: -1.5rem -0.8rem 4rem;
 }
 
