@@ -125,6 +125,68 @@
   border-color: #4f46e5 !important;
 }
 
+/* Move inline style into CSS class */
+.search-container { max-width: 760px; margin: 2rem auto 3rem; }
+
+/* Accessibility: Focus indicators */
+.cards-grid a:focus,
+.search-box .search-input:focus {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+}
+
+[data-md-color-scheme="slate"] .cards-grid a:focus,
+[data-md-color-scheme="slate"] .search-box .search-input:focus {
+  outline-color: #818cf8;
+}
+
+.cards-grid li:focus-within {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+}
+
+/* Accessibility: Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .cards-grid li {
+    transition: none !important;
+  }
+  
+  .cards-grid li:hover {
+    transform: none !important;
+  }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .hero-section {
+    padding: 3rem 1rem;
+  }
+  
+  .hero-section h1 {
+    font-size: 2rem;
+  }
+  
+  .hero-section p {
+    font-size: 1.125rem;
+  }
+  
+  .cards-grid ul {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    padding: 0 1rem 2rem !important;
+  }
+  
+  .cards-grid li {
+    padding: 1.5rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-section h1 {
+    font-size: 1.75rem;
+  }
+}
+
 /* Icon Box Styling - targeting the span that gets the class */
 .card-icon {
   width: 3.5rem;
