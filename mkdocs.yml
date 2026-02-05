@@ -26,6 +26,9 @@ theme:
     - search.suggest
     - search.highlight
     - content.code.copy
+  # Include our custom styles to implement the new documentation design
+extra_css:
+  - site/stylesheets/extra.css
 
 markdown_extensions:
   - admonition
