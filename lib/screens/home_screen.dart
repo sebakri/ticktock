@@ -417,8 +417,8 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
       await _stopTracking();
     } else {
       // 1. Try to get the last active task from DB
-      final lastActiveTitle =
-          await TaskService.instance.getLastActiveTaskTitle();
+      final lastActiveTitle = await TaskService.instance
+          .getLastActiveTaskTitle();
       if (lastActiveTitle != null) {
         await _startTracking(lastActiveTitle);
       } else if (_tasks.isNotEmpty) {
@@ -573,12 +573,12 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
 
     // If the old task has no more blocks, we might want to delete it if it's not a "library" task?
     // Actually, the current logic seems to keep tasks in library.
-    
+
     // If we moved the last block of a task that was created automatically (no title/description?)
     // but here all tasks have titles.
-    
+
     _refreshTasks();
-    
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -786,32 +786,35 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              IconButton(
-                                onPressed: () =>
-                                    TickTockApp.of(context).toggleTheme(),
-                                icon: Icon(
-                                  () {
-                                    final mode = TickTockApp.of(
-                                      context,
-                                    ).themeMode;
-                                    if (mode == ThemeMode.system) {
-                                      return Icons.brightness_auto_rounded;
-                                    }
-                                    return mode == ThemeMode.dark
-                                        ? Icons.dark_mode_rounded
-                                        : Icons.light_mode_rounded;
-                                  }(),
-                                  color: Theme.of(
+                              Builder(
+                                builder: (context) {
+                                  final themeProvider = ThemeProvider.of(
                                     context,
-                                  ).colorScheme.onSurface.withOpacity(0.3),
-                                  size: 20,
-                                ),
-                                tooltip: () {
-                                  final mode = TickTockApp.of(
-                                    context,
-                                  ).themeMode;
-                                  return 'Theme: ${mode.name.toUpperCase()}';
-                                }(),
+                                  );
+                                  final mode = themeProvider.themeMode;
+
+                                  IconData iconData;
+                                  if (mode == ThemeMode.system) {
+                                    iconData = Icons.brightness_auto_rounded;
+                                  } else if (mode == ThemeMode.dark) {
+                                    iconData = Icons.dark_mode_rounded;
+                                  } else {
+                                    iconData = Icons.light_mode_rounded;
+                                  }
+
+                                  return IconButton(
+                                    onPressed: themeProvider.toggleTheme,
+                                    icon: Icon(
+                                      iconData,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurface.withOpacity(0.3),
+                                      size: 20,
+                                    ),
+                                    tooltip:
+                                        'Theme: ${mode.name.toUpperCase()}',
+                                  );
+                                },
                               ),
                               IconButton(
                                 onPressed: _showHelpDialog,
@@ -942,7 +945,9 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                                       onAcceptTimeBlock: (block) =>
                                           _moveTimeBlockToTask(block, task),
                                       onTagTap: (tag) => setState(() {
-                                        _selectedTag = (_selectedTag == tag) ? null : tag;
+                                        _selectedTag = (_selectedTag == tag)
+                                            ? null
+                                            : tag;
                                       }),
                                     );
                                   }, childCount: todayTasks.length),
@@ -994,7 +999,9 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                                       onAcceptTimeBlock: (block) =>
                                           _moveTimeBlockToTask(block, task),
                                       onTagTap: (tag) => setState(() {
-                                        _selectedTag = (_selectedTag == tag) ? null : tag;
+                                        _selectedTag = (_selectedTag == tag)
+                                            ? null
+                                            : tag;
                                       }),
                                     );
                                   }, childCount: libraryTasks.length),
@@ -1015,9 +1022,9 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
   Widget _buildTagFilterBar() {
     final theme = Theme.of(context);
     final onSurface = theme.colorScheme.onSurface;
-    
+
     final allTags = _tasks.expand((t) => t.tags).toSet().toList()..sort();
-    
+
     if (allTags.isEmpty) return const SizedBox.shrink();
 
     return Container(
@@ -1025,30 +1032,51 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: [
-          _buildTagChip('All', _selectedTag == null, () => setState(() => _selectedTag = null), onSurface),
+          _buildTagChip(
+            'All',
+            _selectedTag == null,
+            () => setState(() => _selectedTag = null),
+            onSurface,
+          ),
           const SizedBox(width: 8),
-          ...allTags.map((tag) => Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: _buildTagChip('#$tag', _selectedTag == tag, () => setState(() {
-              _selectedTag = (_selectedTag == tag) ? null : tag;
-            }), onSurface),
-          )),
+          ...allTags.map(
+            (tag) => Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: _buildTagChip(
+                '#$tag',
+                _selectedTag == tag,
+                () => setState(() {
+                  _selectedTag = (_selectedTag == tag) ? null : tag;
+                }),
+                onSurface,
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildTagChip(String label, bool isSelected, VoidCallback onTap, Color onSurface) {
+  Widget _buildTagChip(
+    String label,
+    bool isSelected,
+    VoidCallback onTap,
+    Color onSurface,
+  ) {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF4F46E5) : onSurface.withOpacity(0.03),
+          color: isSelected
+              ? const Color(0xFF4F46E5)
+              : onSurface.withOpacity(0.03),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? Colors.transparent : onSurface.withOpacity(0.05),
+            color: isSelected
+                ? Colors.transparent
+                : onSurface.withOpacity(0.05),
           ),
         ),
         child: Text(
