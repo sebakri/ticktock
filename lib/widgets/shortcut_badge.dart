@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../globals.dart';
 
 class ShortcutBadge extends StatelessWidget {
   final String label;
@@ -14,37 +15,44 @@ class ShortcutBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    return ValueListenableBuilder<bool>(
+      valueListenable: windowFocusNotifier,
+      builder: (context, isFocused, child) {
+        if (!isFocused) return const SizedBox.shrink();
 
-    final bgColor = isLight
-        ? theme.colorScheme.onSurface.withOpacity(isDark ? 0.1 : 0.05)
-        : theme.colorScheme.surface;
+        final theme = Theme.of(context);
+        final isDark = theme.brightness == Brightness.dark;
 
-    final textColor = isLight
-        ? theme.colorScheme.onSurface.withOpacity(0.6)
-        : theme.colorScheme.primary;
+        final bgColor = isLight
+            ? theme.colorScheme.onSurface.withOpacity(isDark ? 0.1 : 0.05)
+            : theme.colorScheme.surface;
 
-    final borderColor = isLight
-        ? theme.colorScheme.onSurface.withOpacity(0.1)
-        : theme.colorScheme.onSurface.withOpacity(0.05);
+        final textColor = isLight
+            ? theme.colorScheme.onSurface.withOpacity(0.6)
+            : theme.colorScheme.primary;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: borderColor),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: fontSize,
-          fontFamily: 'monospace',
-          color: textColor,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
+        final borderColor = isLight
+            ? theme.colorScheme.onSurface.withOpacity(0.1)
+            : theme.colorScheme.onSurface.withOpacity(0.05);
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: borderColor),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: fontSize,
+              fontFamily: 'monospace',
+              color: textColor,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        );
+      },
     );
   }
 }

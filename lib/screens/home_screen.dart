@@ -17,6 +17,7 @@ import '../widgets/shortcut_badge.dart';
 import '../services/task_service.dart';
 import '../app.dart';
 import '../intents.dart';
+import '../globals.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -144,6 +145,7 @@ class HomeScreenState extends State<HomeScreen> with WindowListener {
     setState(() {
       _isWindowFocused = true;
     });
+    windowFocusNotifier.value = true;
     final isCurrentRoute = ModalRoute.of(context)?.isCurrent ?? true;
     if (isCurrentRoute && !searchFocusNode.hasFocus) {
       mainFocusNode.requestFocus();
@@ -155,6 +157,7 @@ class HomeScreenState extends State<HomeScreen> with WindowListener {
     setState(() {
       _isWindowFocused = false;
     });
+    windowFocusNotifier.value = false;
   }
 
   @override
@@ -756,7 +759,7 @@ class HomeScreenState extends State<HomeScreen> with WindowListener {
                                   ).colorScheme.onSurface.withOpacity(0.3),
                                   size: 20,
                                 ),
-                                tooltip: _isWindowFocused ? 'Shortcuts (?)' : 'Help',
+                                tooltip: 'Shortcuts (?)',
                               ),
                             ],
                           ),
@@ -844,7 +847,7 @@ class HomeScreenState extends State<HomeScreen> with WindowListener {
                                             )
                                           : Duration.zero;
 
-                                      final shortcutLabel = (_isWindowFocused && index < 9)
+                                      final shortcutLabel = index < 9
                                           ? '⌘${index + 1}'
                                           : null;
 
@@ -931,7 +934,7 @@ class HomeScreenState extends State<HomeScreen> with WindowListener {
                                               task.title;
 
                                       final shortcutLabel =
-                                          (_isWindowFocused && index < libraryKeys.length)
+                                          index < libraryKeys.length
                                           ? '⌘${libraryKeys[index].keyLabel}'
                                           : null;
 
@@ -1111,10 +1114,8 @@ class HomeScreenState extends State<HomeScreen> with WindowListener {
                 'New Task',
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
               ),
-              if (_isWindowFocused) ...[
-                const SizedBox(width: 12),
-                const ShortcutBadge(label: '⌘N', isLight: true),
-              ],
+              const SizedBox(width: 12),
+              const ShortcutBadge(label: '⌘N', isLight: true),
             ],
           ),
         ),
@@ -1150,17 +1151,15 @@ class HomeScreenState extends State<HomeScreen> with WindowListener {
                         ),
                         onPressed: () => searchController.clear(),
                       )
-                    : _isWindowFocused
-                        ? Padding(
-                            padding: const EdgeInsets.only(right: 12),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                ShortcutBadge(label: '⌘F', isLight: true)
-                              ],
-                            ),
-                          )
-                        : null,
+                    : const Padding(
+                        padding: const EdgeInsets.only(right: 12),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            ShortcutBadge(label: '⌘F', isLight: true)
+                          ],
+                        ),
+                      ),
               ),
             ),
           ),
