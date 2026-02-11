@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ticktock/models/time_block.dart';
 import 'package:ticktock/widgets/edit_session_dialog.dart';
+import 'package:ticktock/widgets/time_picker_dialog.dart' as custom;
 
 void main() {
   testWidgets('EditSessionDialog shows initial values and saves changes', (WidgetTester tester) async {
@@ -85,8 +86,8 @@ void main() {
     // Open Start Time Picker
     await tester.tap(find.text('10:00'));
     await tester.pumpAndSettle();
-    expect(find.byType(TimePickerDialog), findsOneWidget);
-    await tester.tap(find.text('OK'));
+    expect(find.byType(custom.TimePickerDialog), findsOneWidget);
+    await tester.tap(find.text('Confirm'));
     await tester.pumpAndSettle();
   });
 }
