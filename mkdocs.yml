@@ -1,0 +1,43 @@
+site_name: TickTock
+site_url: https://sebakri.github.io/ticktock/
+site_description: Moderne Zeiterfassung für macOS.
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: cyan
+      toggle:
+        icon: material/brightness-7
+        name: In den dunklen Modus wechseln
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: cyan
+      toggle:
+        icon: material/brightness-4
+        name: In den hellen Modus wechseln
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - tables
+
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Bedienung: usage.md
+  - Tastenkombinationen: shortcuts.md
