@@ -6,8 +6,7 @@
   --md-accent-fg-color:         #F59E0B;
 }
 
-/* Karten-Design wie in der App */
-.md-content__inner {
+body {
   font-family: 'Inter', sans-serif;
 }
 
@@ -16,44 +15,55 @@ h1, h2, h3 {
   letter-spacing: -0.02em;
 }
 
-/* Abgerundete Ecken für Code-Blöcke und Admonitions */
-.highlight, .admonition {
+/* Rounded corners for various elements */
+.highlight, .admonition, .md-content__inner img {
   border-radius: 12px !important;
 }
 
-/* Buttons im App-Style */
+/* App-style buttons */
 .md-button--primary {
   background-color: #6366F1 !important;
   border-color: #6366F1 !important;
   border-radius: 10px !important;
   font-weight: 700 !important;
   padding: 0.6em 2em !important;
-  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, background-color 0.2s ease;
 }
 
 .md-button--primary:hover {
   transform: translateY(-2px);
   background-color: #4338ca !important;
+  border-color: #4338ca !important;
 }
 
-/* Tabellen-Styling */
-table {
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-/* Anpassung des Headers */
+/* Header refinement */
 .md-header {
-  background-color: rgba(255, 255, 255, 0.8) !important;
+  background-color: rgba(255, 255, 255, 0.9) !important;
   backdrop-filter: blur(10px);
-  color: #0F172A !important;
 }
 
 [data-md-color-scheme="slate"] .md-header {
-  background-color: rgba(15, 23, 42, 0.8) !important;
+  background-color: rgba(15, 23, 42, 0.9) !important;
 }
 
 .md-header__button.md-logo img {
-  border-radius: 6px;
+  border-radius: 8px;
+  height: 1.5rem;
+  width: auto;
+}
+
+/* Card refinement */
+.md-typeset .grid.cards > :is(ul, ol) > li {
+  border-radius: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+[data-md-color-scheme="slate"] .md-typeset .grid.cards > :is(ul, ol) > li {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.md-typeset .grid.cards > :is(ul, ol) > li:hover {
+  border-color: #6366F1;
+  transform: translateY(-4px);
 }

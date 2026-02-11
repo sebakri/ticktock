@@ -1,17 +1,17 @@
-# Bedienung
+# Usage
 
-TickTock ist darauf ausgelegt, dir nicht im Weg zu stehen.
+TickTock is designed to stay out of your way while keeping you productive.
 
-## Tasks verwalten
+## Managing Tasks
 
-*   **Neuer Task**: Klicke auf "New Task" oder drücke `⌘ + N`.
-*   **Tracking starten**: Klicke auf das Play-Icon neben einem Task oder benutze die zugewiesene Tastenkombination (z.B. `⌘ + 1`).
-*   **Labels hinzufügen**: Nutze das `#` Symbol in der Task-Beschreibung oder im Tag-Feld, um Tasks zu kategorisieren.
+*   **New Task**: Click "New Task" or press `⌘ + N`.
+*   **Start Tracking**: Click the play icon next to a task or use the assigned shortcut (e.g., `⌘ + 1`).
+*   **Adding Labels**: Use the `#` symbol in the task description or tags field to categorize tasks.
 
-## Menüleiste (Top-Bar)
+## Menu Bar (Top Bar)
 
-TickTock lebt in deiner Menüleiste. Ein Klick auf das Icon öffnet die App oder bringt sie in den Vordergrund. Über das Kontextmenü (Rechtsklick) kannst du einstellen, ob der aktuelle Task-Name direkt in der Menüleiste angezeigt werden soll.
+TickTock lives in your menu bar. Clicking the icon opens the app or brings it to the foreground. Use the context menu (right-click) to toggle whether the current task name is displayed directly in the menu bar.
 
-## Filterung
+## Filtering
 
-Du kannst mehrere Labels gleichzeitig auswählen, um deine Aktivitätsliste zu verfeinern. Ein Klick auf "All" setzt alle Filter zurück.
+You can select multiple labels simultaneously to refine your activity list. Clicking "All" resets all active filters.

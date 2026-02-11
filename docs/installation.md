@@ -1,19 +1,19 @@
 # Installation
 
-TickTock ist aktuell als native macOS Applikation verfügbar.
+TickTock is currently available as a native macOS application.
 
-## Systemvoraussetzungen
+## System Requirements
 
-*   macOS 11.0 oder neuer
-*   Apple Silicon oder Intel Prozessor
+*   macOS 11.0 or newer
+*   Apple Silicon or Intel Processor
 
-## Download & Installation
+## Download & Setup
 
-1.  Lade die neueste Version von der [Releases](https://github.com/sebakri/ticktock/releases) Seite herunter.
-2.  Öffne die heruntergeladene `.dmg` Datei.
-3.  Ziehe das TickTock Icon in deinen `Applications` Ordner.
-4.  Starte TickTock über das Launchpad oder Spotlight.
+1.  Download the latest version from the [Releases](https://github.com/sebakri/ticktock/releases) page.
+2.  Open the downloaded `.dmg` file.
+3.  Drag the TickTock icon into your `Applications` folder.
+4.  Launch TickTock via Launchpad or Spotlight.
 
-## Erste Schritte
+## First Steps
 
-Beim ersten Start wird TickTock nach Berechtigungen für globale Tastenkombinationen fragen. Diese sind notwendig, damit du die App über `⌥ + Leertaste` schnell ein- und ausblenden kannst.
+On first launch, TickTock will request permissions for global keyboard shortcuts. These are necessary so you can quickly show or hide the app using `⌥ + Space`.

@@ -1,35 +1,35 @@
-# Tastenkombinationen
+# Keyboard Shortcuts
 
-Effizienz durch Tastaturbedienung.
+Efficiency through keyboard control.
 
 ## Global
 
-Diese Shortcuts funktionieren systemweit.
+These shortcuts work system-wide.
 
-| Shortcut | Aktion |
+| Shortcut | Action |
 | :--- | :--- |
-| `⌥ + Leertaste` | TickTock ein- / ausblenden |
+| `⌥ + Space` | Show / Hide TickTock |
 
-## App-intern
+## App-Internal
 
-Wenn das TickTock Fenster aktiv ist.
+When the TickTock window is active.
 
-| Shortcut | Aktion |
+| Shortcut | Action |
 | :--- | :--- |
-| `⌘ + N` | Neuen Task erstellen |
-| `⌘ + F` | Suche fokussieren |
-| `⌘ + S` | Letzten Task starten / stoppen |
-| `⌘ + T` | Zum heutigen Tag springen |
-| `⌘ + D` | Datumsauswahl öffnen |
-| `⌘ + 1-9` | Task aus der Aktivitätsliste starten |
-| `⌘ + A-Z` | Task aus der Library bearbeiten |
-| `Esc` | Suche leeren / Fokus zurücksetzen |
-| `?` | Hilfe anzeigen |
+| `⌘ + N` | Create new task |
+| `⌘ + F` | Focus search |
+| `⌘ + S` | Start / Stop last active task |
+| `⌘ + T` | Jump to today |
+| `⌘ + D` | Open date picker |
+| `⌘ + 1-9` | Start task from activity list |
+| `⌘ + A-Z` | Edit task from library |
+| `Esc` | Clear search / reset focus |
+| `?` | Show help |
 
-## Innerhalb eines Dialogs
+## Inside a Dialog
 
-| Shortcut | Aktion |
+| Shortcut | Action |
 | :--- | :--- |
-| `⌘ + Enter` | Speichern |
-| `Esc` | Abbrechen |
-| `⌘ + ⌫` | Task löschen (nur im Edit-Modus) |
+| `⌘ + Enter` | Save |
+| `Esc` | Cancel |
+| `⌘ + ⌫` | Delete task (Edit mode only) |
