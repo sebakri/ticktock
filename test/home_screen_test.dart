@@ -32,6 +32,8 @@ void main() {
     when(() => mockTaskService.getTrackingState()).thenAnswer((_) async => null);
     when(() => mockTaskService.getSessionDates()).thenAnswer((_) async => <DateTime>{});
     when(() => mockTaskService.getWindowSize()).thenAnswer((_) async => null);
+    when(() => mockTaskService.getSelectedTags()).thenAnswer((_) async => <String>{});
+    when(() => mockTaskService.saveSelectedTags(any())).thenAnswer((_) async => {});
   });
 
   testWidgets('HomeScreen basic coverage test', (WidgetTester tester) async {

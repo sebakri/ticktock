@@ -37,9 +37,8 @@ class _TimePickerDialogState extends State<TimePickerDialog> {
         borderRadius: BorderRadius.circular(24),
         side: BorderSide(color: onSurface.withOpacity(0.05)),
       ),
-      child: Container(
+      child: Padding(
         padding: const EdgeInsets.all(32),
-        width: 300,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -54,6 +53,7 @@ class _TimePickerDialogState extends State<TimePickerDialog> {
             const SizedBox(height: 32),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 _buildUnitColumn('Hour', _hour, 23, (val) => setState(() => _hour = val)),
                 Padding(
@@ -73,6 +73,7 @@ class _TimePickerDialogState extends State<TimePickerDialog> {
             const SizedBox(height: 40),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
@@ -100,6 +101,7 @@ class _TimePickerDialogState extends State<TimePickerDialog> {
   Widget _buildUnitColumn(String label, int value, int max, Function(int) onChanged) {
     final onSurface = Theme.of(context).colorScheme.onSurface;
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         IconButton(
           onPressed: () => onChanged((value + 1) % (max + 1)),
