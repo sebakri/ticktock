@@ -5,15 +5,13 @@ import 'shortcut_badge.dart';
 
 class EditTaskDialog extends StatefulWidget {
   final Task task;
-  final List<Color> palette;
-  final Function(String title, String description, Color color, List<String> tags) onSave;
+  final Function(String title, String description, List<String> tags) onSave;
   final VoidCallback onDelete;
   final VoidCallback onStart;
 
   const EditTaskDialog({
     super.key,
     required this.task,
-    required this.palette,
     required this.onSave,
     required this.onDelete,
     required this.onStart,
@@ -27,7 +25,6 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
   late TextEditingController _nameController;
   late TextEditingController _descController;
   late TextEditingController _tagsController;
-  late Color _selectedColor;
   bool _showDeleteConfirm = false;
 
   @override
@@ -37,7 +34,6 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
     _descController = TextEditingController(text: widget.task.description);
     _tagsController = TextEditingController(
         text: widget.task.tags.map((t) => '#$t').join(' '));
-    _selectedColor = widget.task.color;
   }
 
   @override
@@ -63,7 +59,7 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
           .toList();
 
       widget.onSave(
-          _nameController.text, _descController.text, _selectedColor, tags);
+          _nameController.text, _descController.text, tags);
       Navigator.pop(context);
     }
 
@@ -164,52 +160,6 @@ class _EditTaskDialogState extends State<EditTaskDialog> {
                 ),
                 const SizedBox(height: 12),
                 _buildTextField(_tagsController, 'e.g. #work #private', onSurface),
-                const SizedBox(height: 24),
-                Text(
-                  'COLOR',
-                  style: TextStyle(
-                    color: onSurface.withOpacity(0.25),
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: widget.palette.map((color) {
-                    final isSelected = _selectedColor == color;
-                    return GestureDetector(
-                      onTap: () => setState(() => _selectedColor = color),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: color,
-                          shape: BoxShape.circle,
-                          border: isSelected
-                              ? Border.all(color: onSurface, width: 2)
-                              : Border.all(color: Colors.transparent),
-                          boxShadow: isSelected
-                              ? [
-                                  BoxShadow(
-                                    color: color.withOpacity(0.4),
-                                    blurRadius: 8,
-                                    spreadRadius: 2,
-                                  )
-                                ]
-                              : [],
-                        ),
-                        child: isSelected
-                            ? const Icon(Icons.check,
-                                size: 18, color: Colors.white)
-                            : null,
-                      ),
-                    );
-                  }).toList(),
-                ),
                 const SizedBox(height: 48),
                 // Row 1: Workflow Actions
                 Row(

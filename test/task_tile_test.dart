@@ -10,7 +10,6 @@ void main() {
       id: 1,
       title: 'Test Task',
       description: 'Test Description',
-      color: Colors.blue,
       blocks: [
         TimeBlock(
           startTime: DateTime(2026, 2, 4, 10, 0),
@@ -28,6 +27,7 @@ void main() {
             child: TaskTile(
               task: task,
               shortcutLabel: '⌘A',
+              color: Colors.blue,
               onTap: () {},
             ),
           ),
@@ -42,7 +42,7 @@ void main() {
   });
 
   testWidgets('TaskTile shows tracking indicator', (WidgetTester tester) async {
-    final task = Task(title: 'Tracking Task', color: Colors.green);
+    final task = Task(id: 1, title: 'Tracking Task');
 
     await tester.pumpWidget(
       MaterialApp(
@@ -53,6 +53,7 @@ void main() {
             child: TaskTile(
               task: task,
               isTracking: true,
+              color: Colors.green,
               onTap: () {},
             ),
           ),
@@ -64,7 +65,7 @@ void main() {
   });
 
   testWidgets('TaskTile accepts TimeBlock via DragTarget', (WidgetTester tester) async {
-    final targetTask = Task(id: 1, title: 'Target Task', color: Colors.blue);
+    final targetTask = Task(id: 1, title: 'Target Task');
     final droppedBlock = TimeBlock(
       id: 10,
       taskId: 2,
@@ -93,6 +94,7 @@ void main() {
                 height: 150,
                 child: TaskTile(
                   task: targetTask,
+                  color: Colors.blue,
                   onTap: () {},
                   onAcceptTimeBlock: (block) {
                     acceptedBlock = block;

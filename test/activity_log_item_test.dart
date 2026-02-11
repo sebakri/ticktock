@@ -7,12 +7,10 @@ import 'package:ticktock/widgets/home/activity_log_item.dart';
 void main() {
   testWidgets('ActivityLogItem filters sessions by selected date', (WidgetTester tester) async {
     final today = DateTime(2026, 2, 4);
-    final yesterday = DateTime(2026, 2, 3);
     
     final task = Task(
       id: 1,
       title: 'Test Task',
-      color: Colors.blue,
       blocks: [
         TimeBlock(
           id: 1,
@@ -38,6 +36,7 @@ void main() {
             task: task,
             selectedDate: today,
             dailyDuration: const Duration(hours: 1),
+            color: Colors.blue,
             isExpanded: true,
             onToggleExpand: () {},
             onStartTracking: () {},
@@ -60,7 +59,6 @@ void main() {
     final task = Task(
       id: 1,
       title: 'Test Task',
-      color: Colors.blue,
       blocks: [],
     );
 
@@ -71,6 +69,7 @@ void main() {
             task: task,
             selectedDate: today,
             isTracking: true,
+            color: Colors.blue,
             activeDuration: const Duration(minutes: 30),
             dailyDuration: Duration.zero,
             isExpanded: true,

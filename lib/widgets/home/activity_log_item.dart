@@ -12,8 +12,10 @@ class ActivityLogItem extends StatefulWidget {
   final Duration dailyDuration;
   final bool isExpanded;
   final String? shortcutLabel;
+  final Color color;
   final VoidCallback onToggleExpand;
   final VoidCallback onStartTracking;
+  final VoidCallback? onEditActiveSession;
   final Function(TimeBlock) onEditBlock;
   final Function(TimeBlock) onDeleteBlock;
   final Function(TimeBlock)? onAcceptTimeBlock;
@@ -28,10 +30,12 @@ class ActivityLogItem extends StatefulWidget {
     this.isTracking = false,
     this.activeDuration = Duration.zero,
     required this.dailyDuration,
+    required this.color,
     this.isExpanded = false,
     this.shortcutLabel,
     required this.onToggleExpand,
     required this.onStartTracking,
+    this.onEditActiveSession,
     required this.onEditBlock,
     required this.onDeleteBlock,
     this.onAcceptTimeBlock,
@@ -87,14 +91,14 @@ class _ActivityLogItemState extends State<ActivityLogItem> {
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
             color: isDraggingOver
-                ? widget.task.color.withOpacity(0.1)
+                ? widget.color.withOpacity(0.1)
                 : widget.isTracking
-                    ? widget.task.color.withOpacity(0.03)
+                    ? widget.color.withOpacity(0.03)
                     : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isDraggingOver 
-                  ? widget.task.color.withOpacity(0.2) 
+                  ? widget.color.withOpacity(0.2) 
                   : Colors.transparent,
               width: 1,
             ),
@@ -144,12 +148,12 @@ class _ActivityLogItemState extends State<ActivityLogItem> {
                             width: 12,
                             height: 12,
                             decoration: BoxDecoration(
-                              color: widget.task.color,
+                              color: widget.color,
                               shape: BoxShape.circle,
                               boxShadow: widget.isTracking || isDraggingOver
                                   ? [
                                       BoxShadow(
-                                        color: widget.task.color.withOpacity(0.4),
+                                        color: widget.color.withOpacity(0.4),
                                         blurRadius: 8,
                                         spreadRadius: 2,
                                       )
@@ -210,7 +214,7 @@ class _ActivityLogItemState extends State<ActivityLogItem> {
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: widget.task.color.withOpacity(0.1),
+                                    color: widget.color.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
@@ -218,7 +222,7 @@ class _ActivityLogItemState extends State<ActivityLogItem> {
                                     style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.w600,
-                                      color: widget.task.color.withOpacity(0.8),
+                                      color: widget.color.withOpacity(0.8),
                                     ),
                                   ),
                                 ),
@@ -234,7 +238,7 @@ class _ActivityLogItemState extends State<ActivityLogItem> {
                           horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
                         color: widget.isTracking
-                            ? widget.task.color.withOpacity(0.1)
+                            ? widget.color.withOpacity(0.1)
                             : onSurface.withOpacity(0.03),
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -244,7 +248,7 @@ class _ActivityLogItemState extends State<ActivityLogItem> {
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
                           color: widget.isTracking
-                              ? widget.task.color
+                              ? widget.color
                               : onSurface.withOpacity(0.5),
                         ),
                       ),
@@ -309,11 +313,11 @@ class _ActivityLogItemState extends State<ActivityLogItem> {
                   width: 8,
                   height: 8,
                   decoration: BoxDecoration(
-                    color: widget.task.color,
+                    color: widget.color,
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: widget.task.color.withOpacity(0.4),
+                        color: widget.color.withOpacity(0.4),
                         blurRadius: 4,
                         spreadRadius: 1,
                       )
@@ -335,11 +339,17 @@ class _ActivityLogItemState extends State<ActivityLogItem> {
           Text(
             durationStr,
             style: TextStyle(
-                color: widget.task.color,
+                color: widget.color,
                 fontSize: 12,
                 fontWeight: FontWeight.bold),
           ),
-          const SizedBox(width: 80), // Space where edit/delete icons would be
+          const SizedBox(width: 8),
+          IconButton(
+            icon: Icon(Icons.edit_outlined,
+                size: 14, color: onSurface.withOpacity(secondaryOpacity)),
+            onPressed: widget.onEditActiveSession,
+          ),
+          const SizedBox(width: 32), // Space where delete icon would be if it existed for active session
         ],
       ),
     );
@@ -368,7 +378,7 @@ class _ActivityLogItemState extends State<ActivityLogItem> {
                 offset: const Offset(0, 4),
               ),
             ],
-            border: Border.all(color: widget.task.color.withOpacity(0.3)),
+            border: Border.all(color: widget.color.withOpacity(0.3)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -377,7 +387,7 @@ class _ActivityLogItemState extends State<ActivityLogItem> {
                 width: 8,
                 height: 8,
                 decoration: BoxDecoration(
-                  color: widget.task.color,
+                  color: widget.color,
                   shape: BoxShape.circle,
                 ),
               ),
@@ -391,7 +401,7 @@ class _ActivityLogItemState extends State<ActivityLogItem> {
               Text(
                 durationStr,
                 style: TextStyle(
-                  color: widget.task.color,
+                  color: widget.color,
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
                 ),
@@ -432,7 +442,7 @@ class _ActivityLogItemState extends State<ActivityLogItem> {
                   width: 6,
                   height: 6,
                   decoration: BoxDecoration(
-                    color: widget.task.color.withOpacity(0.5),
+                    color: widget.color.withOpacity(0.5),
                     shape: BoxShape.circle,
                   ),
                 ),

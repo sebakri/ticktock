@@ -3,27 +3,21 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ticktock/widgets/add_task_dialog.dart';
 
 void main() {
-  testWidgets('AddTaskDialog validation and color filtering', (WidgetTester tester) async {
+  testWidgets('AddTaskDialog validation', (WidgetTester tester) async {
     // Set physical size to match the actual running application (633x1410)
     tester.view.physicalSize = const Size(633, 1410);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
 
     String? savedTitle;
-    String? savedDesc;
-    Color? savedColor;
 
-    final palette = [Colors.red, Colors.blue, Colors.green];
     final existingTitles = ['existing task'];
 
     await tester.pumpWidget(MaterialApp(
       home: AddTaskDialog(
-        palette: palette,
         existingTitles: existingTitles,
-        onSave: (t, d, c, tags) {
+        onSave: (t, d, tags) {
           savedTitle = t;
-          savedDesc = d;
-          savedColor = c;
         },
       ),
     ));
@@ -63,6 +57,5 @@ void main() {
     await tester.pump();
 
     expect(savedTitle, 'New Task');
-    expect(savedColor, Colors.red); // First color in palette
   });
 }

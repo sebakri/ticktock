@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -21,7 +20,7 @@ void main() {
       return null;
     });
     
-    registerFallbackValue(Task(title: '', color: Colors.black));
+    registerFallbackValue(Task(title: ''));
     registerFallbackValue(TimeBlock(startTime: DateTime.now(), endTime: DateTime.now()));
   });
 
@@ -32,6 +31,7 @@ void main() {
     when(() => mockTaskService.getTasks()).thenAnswer((_) async => []);
     when(() => mockTaskService.getTrackingState()).thenAnswer((_) async => null);
     when(() => mockTaskService.getSessionDates()).thenAnswer((_) async => <DateTime>{});
+    when(() => mockTaskService.getWindowSize()).thenAnswer((_) async => null);
   });
 
   testWidgets('HomeScreen basic coverage test', (WidgetTester tester) async {
@@ -39,8 +39,8 @@ void main() {
     
     // Provide some tasks to ensure the Library section is rendered and contains interactive elements
     final tasks = [
-      Task(id: 1, title: 'Alpha', color: Colors.blue),
-      Task(id: 2, title: 'Beta', color: Colors.red),
+      Task(id: 1, title: 'Alpha'),
+      Task(id: 2, title: 'Beta'),
     ];
     when(() => mockTaskService.getTasks()).thenAnswer((_) async => tasks);
 
@@ -56,8 +56,8 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(1200, 1200));
     
     final tasks = [
-      Task(id: 1, title: 'WorkTask', color: Colors.blue, tags: ['work']),
-      Task(id: 2, title: 'HomeTask', color: Colors.red, tags: ['home']),
+      Task(id: 1, title: 'WorkTask', tags: ['work']),
+      Task(id: 2, title: 'HomeTask', tags: ['home']),
     ];
     when(() => mockTaskService.getTasks()).thenAnswer((_) async => tasks);
 
@@ -91,7 +91,7 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(1200, 1200));
     
     final tasks = [
-      Task(id: 1, title: 'LastTask', color: Colors.blue),
+      Task(id: 1, title: 'LastTask'),
     ];
     when(() => mockTaskService.getTasks()).thenAnswer((_) async => tasks);
     when(() => mockTaskService.getLastActiveTaskTitle()).thenAnswer((_) async => 'LastTask');

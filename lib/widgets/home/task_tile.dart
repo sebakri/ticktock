@@ -10,6 +10,7 @@ class TaskTile extends StatefulWidget {
   final Function(String)? onTagTap;
   final bool isTracking;
   final Function(TimeBlock)? onAcceptTimeBlock;
+  final Color color;
 
   const TaskTile({
     super.key,
@@ -19,6 +20,7 @@ class TaskTile extends StatefulWidget {
     this.onTagTap,
     this.isTracking = false,
     this.onAcceptTimeBlock,
+    required this.color,
   });
 
   @override
@@ -53,12 +55,12 @@ class _TaskTileState extends State<TaskTile> {
             clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
               color: isDraggingOver
-                  ? widget.task.color.withOpacity(0.1)
+                  ? widget.color.withOpacity(0.1)
                   : onSurface.withOpacity(0.03),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: widget.isTracking || isDraggingOver
-                    ? widget.task.color
+                    ? widget.color
                     : onSurface.withOpacity(0.05),
                 width: widget.isTracking || isDraggingOver ? 1.5 : 1,
               ),
@@ -74,7 +76,7 @@ class _TaskTileState extends State<TaskTile> {
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            widget.task.color.withOpacity(0.1),
+                            widget.color.withOpacity(0.1),
                             Colors.transparent,
                           ],
                         ),
@@ -87,7 +89,7 @@ class _TaskTileState extends State<TaskTile> {
                   top: 0,
                   bottom: 0,
                   width: 4,
-                  child: Container(color: widget.task.color),
+                  child: Container(color: widget.color),
                 ),
                 // Content
                 Padding(
@@ -122,39 +124,44 @@ class _TaskTileState extends State<TaskTile> {
                       ),
                       if (widget.task.description.isNotEmpty) ...[
                         const SizedBox(height: 4),
-                        Text(
-                          widget.task.description,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: onSurface.withOpacity(isDark ? 0.25 : 0.45),
+                        Flexible(
+                          child: Text(
+                            widget.task.description,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: onSurface.withOpacity(isDark ? 0.25 : 0.45),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                       if (widget.task.tags.isNotEmpty) ...[
                         const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 4,
-                          runSpacing: 4,
-                          children: widget.task.tags.map((tag) => GestureDetector(
-                            onTap: widget.onTagTap != null ? () => widget.onTagTap!(tag) : null,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: widget.task.color.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                '#$tag',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  color: widget.task.color.withOpacity(0.8),
+                        Flexible(
+                          child: Wrap(
+                            spacing: 4,
+                            runSpacing: 4,
+                            clipBehavior: Clip.antiAlias,
+                            children: widget.task.tags.map((tag) => GestureDetector(
+                              onTap: widget.onTagTap != null ? () => widget.onTagTap!(tag) : null,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: widget.color.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  '#$tag',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: widget.color.withOpacity(0.8),
+                                  ),
                                 ),
                               ),
-                            ),
-                          )).toList(),
+                            )).toList(),
+                          ),
                         ),
                       ],
                       const Spacer(),
@@ -175,7 +182,7 @@ class _TaskTileState extends State<TaskTile> {
                               isDraggingOver
                                   ? Icons.add_circle_outline_rounded
                                   : Icons.play_arrow_rounded,
-                              color: widget.task.color,
+                              color: widget.color,
                               size: 18,
                             ),
                         ],

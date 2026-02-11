@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
-import 'package:hotkey_manager/hotkey_manager.dart';
 import 'app.dart';
 import 'services/task_service.dart';
 

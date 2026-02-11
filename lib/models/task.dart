@@ -5,7 +5,7 @@ class Task {
   int? id;
   String title;
   String description;
-  Color color;
+  Color? color;
   final List<TimeBlock> blocks;
   final List<String> tags;
 
@@ -13,7 +13,7 @@ class Task {
     this.id,
     required this.title,
     this.description = '',
-    required this.color,
+    this.color,
     List<TimeBlock>? blocks,
     List<String>? tags,
   })  : blocks = blocks ?? [],
@@ -43,18 +43,19 @@ class Task {
       'id': id,
       'title': title,
       'description': description,
-      'color': color.value,
+      'color': color?.value,
       'tags': tags.join(','),
     };
   }
 
   factory Task.fromMap(Map<String, dynamic> map, List<TimeBlock> blocks) {
     final tagsStr = map['tags'] as String? ?? '';
+    final colorValue = map['color'] as int?;
     return Task(
       id: map['id'],
       title: map['title'],
       description: map['description'],
-      color: Color(map['color']),
+      color: colorValue != null ? Color(colorValue) : null,
       blocks: blocks,
       tags: tagsStr.isEmpty ? [] : tagsStr.split(','),
     );
