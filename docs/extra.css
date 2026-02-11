@@ -1,0 +1,59 @@
+:root {
+  /* TickTock Design System */
+  --md-primary-fg-color:        #6366F1;
+  --md-primary-fg-color--light: #818cf8;
+  --md-primary-fg-color--dark:  #4338ca;
+  --md-accent-fg-color:         #F59E0B;
+}
+
+/* Karten-Design wie in der App */
+.md-content__inner {
+  font-family: 'Inter', sans-serif;
+}
+
+h1, h2, h3 {
+  font-weight: 800 !important;
+  letter-spacing: -0.02em;
+}
+
+/* Abgerundete Ecken für Code-Blöcke und Admonitions */
+.highlight, .admonition {
+  border-radius: 12px !important;
+}
+
+/* Buttons im App-Style */
+.md-button--primary {
+  background-color: #6366F1 !important;
+  border-color: #6366F1 !important;
+  border-radius: 10px !important;
+  font-weight: 700 !important;
+  padding: 0.6em 2em !important;
+  transition: transform 0.2s ease;
+}
+
+.md-button--primary:hover {
+  transform: translateY(-2px);
+  background-color: #4338ca !important;
+}
+
+/* Tabellen-Styling */
+table {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Anpassung des Headers */
+.md-header {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(10px);
+  color: #0F172A !important;
+}
+
+[data-md-color-scheme="slate"] .md-header {
+  background-color: rgba(15, 23, 42, 0.8) !important;
+}
+
+.md-header__button.md-logo img {
+  border-radius: 6px;
+}

@@ -4,18 +4,23 @@ site_description: Moderne Zeiterfassung für macOS.
 
 theme:
   name: material
+  logo: assets/app_icon_128.png
+  favicon: assets/tray_icon_Template.png
+  font:
+    text: Inter
+    code: Roboto Mono
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: indigo
-      accent: cyan
+      primary: custom
+      accent: amber
       toggle:
         icon: material/brightness-7
         name: In den dunklen Modus wechseln
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: indigo
-      accent: cyan
+      primary: custom
+      accent: amber
       toggle:
         icon: material/brightness-4
         name: In den hellen Modus wechseln
@@ -26,6 +31,10 @@ theme:
     - search.suggest
     - search.highlight
     - content.code.copy
+
+extra_css:
+  - extra.css
+
 
 markdown_extensions:
   - admonition
