@@ -76,6 +76,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
   String _searchQuery = '';
   String? _selectedTag;
   final Set<int> _expandedActivityIds = {};
+  final Map<int, Color> _taskColors = {};
 
   static const List<Color> _palette = [
     Color(0xFF6366F1), // Indigo
@@ -166,6 +167,14 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
   }
 
   @override
+  void onWindowFocus() {
+    final isCurrentRoute = ModalRoute.of(context)?.isCurrent ?? true;
+    if (isCurrentRoute && !_searchFocusNode.hasFocus) {
+      _mainFocusNode.requestFocus();
+    }
+  }
+
+  @override
   void onWindowResized() async {
     final size = await windowManager.getSize();
     await TaskService.instance.saveWindowSize(size.width, size.height);
@@ -176,6 +185,14 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
     setState(() {
       _tasks = tasks;
       _isLoading = false;
+
+      // Update dynamic colors based on all tasks
+      _taskColors.clear();
+      for (int i = 0; i < _tasks.length; i++) {
+        if (_tasks[i].id != null) {
+          _taskColors[_tasks[i].id!] = _palette[i % _palette.length];
+        }
+      }
     });
   }
 
@@ -334,27 +351,17 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
     );
   }
 
-  Color _getNextColor() {
-    return _palette[_tasks.length % _palette.length];
-  }
-
   void _addNewTask() {
-    final usedColors = _tasks.map((t) => t.color).toSet();
-    final availablePalette = _palette
-        .where((color) => !usedColors.contains(color))
-        .toList();
     final existingTitles = _tasks.map((t) => t.title.toLowerCase()).toList();
 
     showDialog(
       context: context,
       builder: (context) => AddTaskDialog(
-        palette: availablePalette.isEmpty ? _palette : availablePalette,
         existingTitles: existingTitles,
-        onSave: (title, description, color, tags) async {
+        onSave: (title, description, tags) async {
           final newTask = Task(
             title: title,
             description: description,
-            color: color,
             tags: tags,
           );
           await TaskService.instance.createTask(newTask);
@@ -404,6 +411,33 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
     }
   }
 
+  Future<void> _editActiveSession() async {
+    if (!_isTracking || _trackingStartTime == null) return;
+
+    final TimeOfDay? pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_trackingStartTime!),
+    );
+
+    if (pickedTime == null) return;
+
+    final newStartTime = DateTime(
+      _trackingStartTime!.year,
+      _trackingStartTime!.month,
+      _trackingStartTime!.day,
+      pickedTime.hour,
+      pickedTime.minute,
+    );
+
+    if (newStartTime != _trackingStartTime) {
+      await TaskService.instance
+          .saveTrackingState(_taskController.text, newStartTime);
+      setState(() {
+        _trackingStartTime = newStartTime;
+      });
+    }
+  }
+
   void _onStartTracking(String title) async {
     if (_isTracking && _taskController.text.trim() == title) {
       await _stopTracking();
@@ -436,7 +470,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
     // Ensure the task exists
     final existingTaskIndex = _tasks.indexWhere((t) => t.title == title);
     if (existingTaskIndex == -1) {
-      final newTask = Task(title: title, color: _getNextColor());
+      final newTask = Task(title: title);
       await TaskService.instance.createTask(newTask);
       await _refreshTasks();
     }
@@ -492,23 +526,13 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
   }
 
   void _editTask(Task task) {
-    final usedColors = _tasks
-        .where((t) => t != task)
-        .map((t) => t.color)
-        .toSet();
-    final availablePalette = _palette
-        .where((color) => !usedColors.contains(color) || color == task.color)
-        .toList();
-
     showDialog(
       context: context,
       builder: (context) => EditTaskDialog(
         task: task,
-        palette: availablePalette,
-        onSave: (title, description, color, tags) async {
+        onSave: (title, description, tags) async {
           task.title = title;
           task.description = description;
-          task.color = color;
           task.tags.clear();
           task.tags.addAll(tags);
           await TaskService.instance.updateTask(task);
@@ -567,15 +591,8 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
   void _moveTimeBlockToTask(TimeBlock block, Task targetTask) async {
     if (block.taskId == targetTask.id) return;
 
-    final oldTaskId = block.taskId;
     block.taskId = targetTask.id;
     await TaskService.instance.updateTimeBlock(block);
-
-    // If the old task has no more blocks, we might want to delete it if it's not a "library" task?
-    // Actually, the current logic seems to keep tasks in library.
-
-    // If we moved the last block of a task that was created automatically (no title/description?)
-    // but here all tasks have titles.
 
     _refreshTasks();
 
@@ -769,7 +786,6 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                     height: 60,
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(horizontal: 24),
-
                     child: Stack(
                       children: [
                         Center(
@@ -837,177 +853,189 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                 Expanded(
                   child: _isLoading
                       ? const Center(child: CircularProgressIndicator())
-                      : Padding(
-                          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                          child: CustomScrollView(
-                            slivers: [
-                              SliverToBoxAdapter(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    _buildSectionHeader(
-                                      'ACTIVITY',
-                                      Icons.history_rounded,
-                                      trailing: _buildTodayTotalBadge(),
-                                    ),
-                                    DailyLogHeader(
-                                      selectedDate: _selectedDate,
-                                      onPrevDay: () {
-                                        setState(() {
-                                          _selectedDate = _selectedDate
-                                              .subtract(
-                                                const Duration(days: 1),
-                                              );
-                                        });
-                                      },
-                                      onNextDay: () {
-                                        setState(() {
-                                          _selectedDate = _selectedDate.add(
-                                            const Duration(days: 1),
-                                          );
-                                        });
-                                      },
-                                      onToday: _goToToday,
-                                      onJumpToDate: _jumpToDate,
-                                    ),
-                                    const SizedBox(height: 24),
-                                    DayTimeline(
-                                      selectedDate: _selectedDate,
-                                      tasks: todayTasks,
-                                      isTracking: _isTracking,
-                                      trackingStartTime: _trackingStartTime,
-                                      trackingTaskTitle: _taskController.text
-                                          .trim(),
-                                      palette: _palette,
-                                    ),
-                                    const SizedBox(height: 16),
-                                    _buildTagFilterBar(),
-                                    const SizedBox(height: 16),
-                                  ],
-                                ),
-                              ),
-                              if (todayTasks.isNotEmpty) ...[
-                                SliverList(
-                                  delegate: SliverChildBuilderDelegate((
-                                    context,
-                                    index,
-                                  ) {
-                                    final task = todayTasks[index];
-                                    final isTrackingThisTask =
-                                        _isTracking &&
-                                        _taskController.text.trim() ==
-                                            task.title;
-                                    final activeDuration =
-                                        isTrackingThisTask &&
-                                            _trackingStartTime != null
-                                        ? DateTime.now().difference(
-                                            _trackingStartTime!,
-                                          )
-                                        : Duration.zero;
-
-                                    final shortcutLabel = index < 9
-                                        ? '⌘${index + 1}'
-                                        : null;
-
-                                    return ActivityLogItem(
-                                      task: task,
-                                      selectedDate: _selectedDate,
-                                      isTracking: isTrackingThisTask,
-                                      activeDuration: activeDuration,
-                                      dailyDuration: task.durationOn(
-                                        _selectedDate,
-                                      ),
-                                      isExpanded: _expandedActivityIds.contains(
-                                        task.id,
-                                      ),
-                                      shortcutLabel: shortcutLabel,
-                                      isFirst: index == 0,
-                                      isLast: index == todayTasks.length - 1,
-                                      onToggleExpand: () => setState(() {
-                                        if (task.id != null) {
-                                          if (_expandedActivityIds.contains(
-                                            task.id,
-                                          )) {
-                                            _expandedActivityIds.remove(
-                                              task.id,
-                                            );
-                                          } else {
-                                            _expandedActivityIds.add(task.id!);
-                                          }
-                                        }
-                                      }),
-                                      onStartTracking: () =>
-                                          _onStartTracking(task.title),
-                                      onEditBlock: (block) =>
-                                          _editTimeBlock(task, block),
-                                      onDeleteBlock: (block) =>
-                                          _deleteTimeBlock(task, block),
-                                      onAcceptTimeBlock: (block) =>
-                                          _moveTimeBlockToTask(block, task),
-                                      onTagTap: (tag) => setState(() {
-                                        _selectedTag = (_selectedTag == tag)
-                                            ? null
-                                            : tag;
-                                      }),
-                                    );
-                                  }, childCount: todayTasks.length),
-                                ),
-                              ],
-                              if (libraryTasks.isNotEmpty) ...[
+                      : GestureDetector(
+                          onTap: () {
+                            if (!_searchFocusNode.hasFocus) {
+                              _mainFocusNode.requestFocus();
+                            }
+                          },
+                          behavior: HitTestBehavior.translucent,
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                            child: CustomScrollView(
+                              slivers: [
                                 SliverToBoxAdapter(
                                   child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       _buildSectionHeader(
-                                        'LIBRARY',
-                                        Icons.layers_rounded,
+                                        'ACTIVITY',
+                                        Icons.history_rounded,
+                                        trailing: _buildTodayTotalBadge(),
                                       ),
-                                      _buildSearchHeader(),
+                                      DailyLogHeader(
+                                        selectedDate: _selectedDate,
+                                        onPrevDay: () {
+                                          setState(() {
+                                            _selectedDate = _selectedDate
+                                                .subtract(
+                                                  const Duration(days: 1),
+                                                );
+                                          });
+                                        },
+                                        onNextDay: () {
+                                          setState(() {
+                                            _selectedDate = _selectedDate.add(
+                                              const Duration(days: 1),
+                                            );
+                                          });
+                                        },
+                                        onToday: _goToToday,
+                                        onJumpToDate: _jumpToDate,
+                                      ),
+                                      const SizedBox(height: 24),
+                                      DayTimeline(
+                                        selectedDate: _selectedDate,
+                                        tasks: todayTasks,
+                                        isTracking: _isTracking,
+                                        trackingStartTime: _trackingStartTime,
+                                        trackingTaskTitle: _taskController.text
+                                            .trim(),
+                                        taskColors: _taskColors,
+                                      ),
+                                      const SizedBox(height: 16),
+                                      _buildTagFilterBar(),
                                       const SizedBox(height: 16),
                                     ],
                                   ),
                                 ),
-                                SliverGrid(
-                                  gridDelegate:
-                                      const SliverGridDelegateWithMaxCrossAxisExtent(
-                                        maxCrossAxisExtent: 280,
-                                        mainAxisSpacing: 12,
-                                        crossAxisSpacing: 12,
-                                        childAspectRatio: 1.8,
-                                      ),
-                                  delegate: SliverChildBuilderDelegate((
-                                    context,
-                                    index,
-                                  ) {
-                                    final task = libraryTasks[index];
-                                    final isTrackingThisTask =
-                                        _isTracking &&
-                                        _taskController.text.trim() ==
-                                            task.title;
+                                if (todayTasks.isNotEmpty) ...[
+                                  SliverList(
+                                    delegate: SliverChildBuilderDelegate((
+                                      context,
+                                      index,
+                                    ) {
+                                      final task = todayTasks[index];
+                                      final taskColor = _taskColors[task.id] ?? Colors.grey;
+                                      final isTrackingThisTask =
+                                          _isTracking &&
+                                          _taskController.text.trim() ==
+                                              task.title;
+                                      final activeDuration =
+                                          isTrackingThisTask &&
+                                              _trackingStartTime != null
+                                          ? DateTime.now().difference(
+                                              _trackingStartTime!,
+                                            )
+                                          : Duration.zero;
 
-                                    final shortcutLabel =
-                                        index < libraryKeys.length
-                                        ? '⌘${libraryKeys[index].keyLabel}'
-                                        : null;
+                                      final shortcutLabel = index < 9
+                                          ? '⌘${index + 1}'
+                                          : null;
 
-                                    return TaskTile(
-                                      task: task,
-                                      isTracking: isTrackingThisTask,
-                                      shortcutLabel: shortcutLabel,
-                                      onTap: () => _editTask(task),
-                                      onAcceptTimeBlock: (block) =>
-                                          _moveTimeBlockToTask(block, task),
-                                      onTagTap: (tag) => setState(() {
-                                        _selectedTag = (_selectedTag == tag)
-                                            ? null
-                                            : tag;
-                                      }),
-                                    );
-                                  }, childCount: libraryTasks.length),
-                                ),
+                                      return ActivityLogItem(
+                                        task: task,
+                                        selectedDate: _selectedDate,
+                                        isTracking: isTrackingThisTask,
+                                        activeDuration: activeDuration,
+                                        dailyDuration: task.durationOn(
+                                          _selectedDate,
+                                        ),
+                                        color: taskColor,
+                                        isExpanded: _expandedActivityIds.contains(
+                                          task.id,
+                                        ),
+                                        shortcutLabel: shortcutLabel,
+                                        isFirst: index == 0,
+                                        isLast: index == todayTasks.length - 1,
+                                        onToggleExpand: () => setState(() {
+                                          if (task.id != null) {
+                                            if (_expandedActivityIds.contains(
+                                              task.id,
+                                            )) {
+                                              _expandedActivityIds.remove(
+                                                task.id,
+                                              );
+                                            } else {
+                                              _expandedActivityIds.add(task.id!);
+                                            }
+                                          }
+                                        }),
+                                                                              onStartTracking: () =>
+                                                                                  _onStartTracking(task.title),
+                                                                              onEditActiveSession: _editActiveSession,
+                                                                              onEditBlock: (block) =>
+                                                                                  _editTimeBlock(task, block),                                        onDeleteBlock: (block) =>
+                                            _deleteTimeBlock(task, block),
+                                        onAcceptTimeBlock: (block) =>
+                                            _moveTimeBlockToTask(block, task),
+                                        onTagTap: (tag) => setState(() {
+                                          _selectedTag = (_selectedTag == tag)
+                                              ? null
+                                              : tag;
+                                        }),
+                                      );
+                                    }, childCount: todayTasks.length),
+                                  ),
+                                ],
+                                if (libraryTasks.isNotEmpty) ...[
+                                   SliverToBoxAdapter(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        _buildSectionHeader(
+                                          'LIBRARY',
+                                          Icons.layers_rounded,
+                                        ),
+                                        _buildSearchHeader(),
+                                        const SizedBox(height: 16),
+                                      ],
+                                    ),
+                                  ),
+                                  SliverGrid(
+                                    gridDelegate:
+                                        const SliverGridDelegateWithMaxCrossAxisExtent(
+                                          maxCrossAxisExtent: 280,
+                                          mainAxisSpacing: 12,
+                                          crossAxisSpacing: 12,
+                                          childAspectRatio: 1.8,
+                                        ),
+                                    delegate: SliverChildBuilderDelegate((
+                                      context,
+                                      index,
+                                    ) {
+                                      final task = libraryTasks[index];
+                                      final taskColor = _taskColors[task.id] ?? Colors.grey;
+                                      final isTrackingThisTask =
+                                          _isTracking &&
+                                          _taskController.text.trim() ==
+                                              task.title;
+
+                                      final shortcutLabel =
+                                          index < libraryKeys.length
+                                          ? '⌘${libraryKeys[index].keyLabel}'
+                                          : null;
+
+                                      return TaskTile(
+                                        task: task,
+                                        isTracking: isTrackingThisTask,
+                                        shortcutLabel: shortcutLabel,
+                                        color: taskColor,
+                                        onTap: () => _editTask(task),
+                                        onAcceptTimeBlock: (block) =>
+                                            _moveTimeBlockToTask(block, task),
+                                        onTagTap: (tag) => setState(() {
+                                          _selectedTag = (_selectedTag == tag)
+                                              ? null
+                                              : tag;
+                                        }),
+                                      );
+                                    }, childCount: libraryTasks.length),
+                                  ),
+                                ],
                               ],
-                            ],
+                            ),
                           ),
                         ),
                 ),

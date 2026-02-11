@@ -14,15 +14,13 @@ void main() {
       id: 1,
       title: 'Test Task',
       description: 'Test Description',
-      color: Colors.blue,
     );
 
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(
         body: EditTaskDialog(
           task: task,
-          palette: const [Colors.blue, Colors.red],
-          onSave: (t, d, c, tags) {},
+          onSave: (t, d, tags) {},
           onDelete: () {},
           onStart: () {},
         ),

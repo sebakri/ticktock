@@ -3,13 +3,11 @@ import 'package:flutter/services.dart';
 import 'shortcut_badge.dart';
 
 class AddTaskDialog extends StatefulWidget {
-  final List<Color> palette;
   final List<String> existingTitles;
-  final Function(String title, String description, Color color, List<String> tags) onSave;
+  final Function(String title, String description, List<String> tags) onSave;
 
   const AddTaskDialog({
     super.key,
-    required this.palette,
     required this.existingTitles,
     required this.onSave,
   });
@@ -22,13 +20,11 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
   final TextEditingController _tagsController = TextEditingController();
-  late Color _selectedColor;
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _selectedColor = widget.palette.first;
     _nameController.addListener(_validate);
   }
 
@@ -68,8 +64,7 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
           .map((t) => t.startsWith('#') ? t.substring(1) : t)
           .toList();
 
-      widget.onSave(_nameController.text.trim(), _descController.text.trim(),
-          _selectedColor, tags);
+      widget.onSave(_nameController.text.trim(), _descController.text.trim(), tags);
       Navigator.pop(context);
     }
 
@@ -169,52 +164,6 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
                 const SizedBox(height: 12),
                 _buildTextField(
                     _tagsController, 'e.g. #work #private', onSurface),
-                const SizedBox(height: 24),
-                Text(
-                  'COLOR',
-                  style: TextStyle(
-                    color: onSurface.withOpacity(0.25),
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: widget.palette.map((color) {
-                    final isSelected = _selectedColor == color;
-                    return GestureDetector(
-                      onTap: () => setState(() => _selectedColor = color),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: color,
-                          shape: BoxShape.circle,
-                          border: isSelected
-                              ? Border.all(color: onSurface, width: 2)
-                              : Border.all(color: Colors.transparent),
-                          boxShadow: isSelected
-                              ? [
-                                  BoxShadow(
-                                    color: color.withOpacity(0.4),
-                                    blurRadius: 8,
-                                    spreadRadius: 2,
-                                  )
-                                ]
-                              : [],
-                        ),
-                        child: isSelected
-                            ? const Icon(Icons.check,
-                                size: 18, color: Colors.white)
-                            : null,
-                      ),
-                    );
-                  }).toList(),
-                ),
                 const SizedBox(height: 48),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -252,10 +201,8 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
     required VoidCallback? onPressed,
     required Color onSurface,
     IconData? icon,
-    Color? color,
     bool isPrimary = false,
   }) {
-    final themeColor = color ?? onSurface;
     return ElevatedButton(
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(

@@ -11,7 +11,6 @@ void main() {
     final task = Task(
       id: 1,
       title: 'Test Task',
-      color: Colors.blue,
       blocks: [
         TimeBlock(
           id: 1,
@@ -30,7 +29,7 @@ void main() {
             tasks: [task],
             isTracking: false,
             trackingTaskTitle: '',
-            palette: const [Colors.red],
+            taskColors: const {1: Colors.blue},
           ),
         ),
       ),
@@ -48,7 +47,6 @@ void main() {
     final task = Task(
       id: 1,
       title: 'Tracking Task',
-      color: Colors.green,
       blocks: [],
     );
 
@@ -61,14 +59,13 @@ void main() {
             isTracking: true,
             trackingStartTime: startTime,
             trackingTaskTitle: 'Tracking Task',
-            palette: const [Colors.green],
+            taskColors: const {1: Colors.green},
           ),
         ),
       ),
     );
 
-    // Verify current time is shown in labels (this might be tricky if it's too close to another label)
-    // But at least we can check it doesn't crash
+    // Verify current time is shown in labels
     expect(find.byType(DayTimeline), findsOneWidget);
   });
 }

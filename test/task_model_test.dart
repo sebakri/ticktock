@@ -6,7 +6,7 @@ import 'package:ticktock/models/time_block.dart';
 void main() {
   group('Task Model', () {
     test('totalDuration handles empty blocks', () {
-      final task = Task(title: 'T', color: Colors.blue);
+      final task = Task(title: 'T');
       expect(task.totalDuration, Duration.zero);
     });
 
@@ -16,7 +16,6 @@ void main() {
       
       final task = Task(
         title: 'T',
-        color: Colors.blue,
         blocks: [
           TimeBlock(startTime: today, endTime: today.add(const Duration(hours: 1))),
           TimeBlock(startTime: yesterday, endTime: yesterday.add(const Duration(hours: 2))),
@@ -33,7 +32,6 @@ void main() {
       
       final task = Task(
         title: 'T',
-        color: Colors.blue,
         blocks: [
           TimeBlock(startTime: t1, endTime: t1.add(const Duration(hours: 1))),
           TimeBlock(startTime: t2, endTime: t2.add(const Duration(hours: 1))),
@@ -56,7 +54,17 @@ void main() {
       final fromMap = Task.fromMap(map, []);
       expect(fromMap.id, 1);
       expect(fromMap.title, 'Test');
-      expect(fromMap.color.value, Colors.red.value);
+      expect(fromMap.color?.value, Colors.red.value);
+    });
+
+    test('toMap and fromMap with null color', () {
+      final task = Task(id: 1, title: 'Test', description: 'Desc');
+      final map = task.toMap();
+      
+      expect(map['color'], isNull);
+
+      final fromMap = Task.fromMap(map, []);
+      expect(fromMap.color, isNull);
     });
   });
 }

@@ -7,7 +7,7 @@ class DayTimeline extends StatelessWidget {
   final bool isTracking;
   final DateTime? trackingStartTime;
   final String trackingTaskTitle;
-  final List<Color> palette;
+  final Map<int, Color> taskColors;
 
   const DayTimeline({
     super.key,
@@ -16,7 +16,7 @@ class DayTimeline extends StatelessWidget {
     required this.isTracking,
     this.trackingStartTime,
     required this.trackingTaskTitle,
-    required this.palette,
+    required this.taskColors,
   });
 
   @override
@@ -195,7 +195,9 @@ class DayTimeline extends StatelessWidget {
               block.startTime.day == selectedDate.day) {
             if (earliestBlockTime == null || block.startTime.isBefore(earliestBlockTime)) {
               earliestBlockTime = block.startTime;
-              firstTaskColor = task.color;
+              if (task.id != null) {
+                firstTaskColor = taskColors[task.id!];
+              }
             }
           }
         }
@@ -207,10 +209,8 @@ class DayTimeline extends StatelessWidget {
           trackingStartTime!.day == selectedDate.day) {
         if (earliestBlockTime == null || trackingStartTime!.isBefore(earliestBlockTime)) {
            final existingTask = tasks.where((t) => t.title == trackingTaskTitle).firstOrNull;
-           if (existingTask != null) {
-              firstTaskColor = existingTask.color;
-           } else if (tasks.isNotEmpty) {
-              firstTaskColor = palette[tasks.length % palette.length];
+           if (existingTask != null && existingTask.id != null) {
+              firstTaskColor = taskColors[existingTask.id!];
            }
         }
       }
@@ -229,6 +229,10 @@ class DayTimeline extends StatelessWidget {
       
       // 3. Task Bars
       for (var task in tasks) {
+        if (task.id == null) continue;
+        final color = taskColors[task.id!];
+        if (color == null) continue;
+
         for (var block in task.blocks) {
           if (block.startTime.year != selectedDate.year || 
               block.startTime.month != selectedDate.month || 
@@ -256,7 +260,7 @@ class DayTimeline extends StatelessWidget {
             width: width.clamp(1.0, totalWidth),
             top: 0,
             bottom: 0,
-            child: Container(color: task.color),
+            child: Container(color: color),
           ));
         }
       }
@@ -279,7 +283,9 @@ class DayTimeline extends StatelessWidget {
           double width = (durationSec / totalTimelineSeconds) * totalWidth;
 
           final existingTask = tasks.where((t) => t.title == trackingTaskTitle).firstOrNull;
-          final color = existingTask?.color ?? palette[tasks.length % palette.length];
+          final color = (existingTask != null && existingTask.id != null) 
+              ? taskColors[existingTask.id!] 
+              : Colors.grey;
 
           bars.add(
             Positioned(

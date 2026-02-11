@@ -26,7 +26,7 @@ class TaskService {
 
     return await openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -54,6 +54,26 @@ class TaskService {
     if (oldVersion < 4) {
       await db.execute('ALTER TABLE tasks ADD COLUMN tags TEXT');
     }
+    if (oldVersion < 5) {
+      // Procedure to make a column nullable in SQLite (re-create table)
+      await db.execute('PRAGMA foreign_keys=OFF');
+      await db.execute('''
+        CREATE TABLE tasks_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          title TEXT NOT NULL,
+          description TEXT,
+          color INTEGER,
+          tags TEXT
+        )
+      ''');
+      await db.execute('''
+        INSERT INTO tasks_new (id, title, description, color, tags)
+        SELECT id, title, description, color, tags FROM tasks
+      ''');
+      await db.execute('DROP TABLE tasks');
+      await db.execute('ALTER TABLE tasks_new RENAME TO tasks');
+      await db.execute('PRAGMA foreign_keys=ON');
+    }
   }
 
   Future _createDB(Database db, int version) async {
@@ -62,7 +82,7 @@ class TaskService {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT NOT NULL,
         description TEXT,
-        color INTEGER NOT NULL,
+        color INTEGER,
         tags TEXT
       )
     ''');
