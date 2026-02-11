@@ -26,7 +26,7 @@ class TaskService {
 
     return await openDatabase(
       path,
-      version: 5,
+      version: 6,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -74,6 +74,14 @@ class TaskService {
       await db.execute('ALTER TABLE tasks_new RENAME TO tasks');
       await db.execute('PRAGMA foreign_keys=ON');
     }
+    if (oldVersion < 6) {
+      await db.execute('''
+        CREATE TABLE filter_state (
+          id INTEGER PRIMARY KEY,
+          selected_tags TEXT
+        )
+      ''');
+    }
   }
 
   Future _createDB(Database db, int version) async {
@@ -111,6 +119,13 @@ class TaskService {
         id INTEGER PRIMARY KEY,
         width REAL,
         height REAL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE filter_state (
+        id INTEGER PRIMARY KEY,
+        selected_tags TEXT
       )
     ''');
   }
@@ -174,6 +189,32 @@ class TaskService {
       where: 'id = ?',
       whereArgs: [1],
     );
+  }
+
+  Future<void> saveSelectedTags(Set<String> tags) async {
+    final db = await instance.database;
+    await db.insert(
+      'filter_state',
+      {
+        'id': 1,
+        'selected_tags': tags.join(','),
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<Set<String>> getSelectedTags() async {
+    final db = await instance.database;
+    final maps = await db.query(
+      'filter_state',
+      where: 'id = ?',
+      whereArgs: [1],
+    );
+    if (maps.isNotEmpty) {
+      final tagsStr = maps.first['selected_tags'] as String? ?? '';
+      return tagsStr.isEmpty ? {} : tagsStr.split(',').toSet();
+    }
+    return {};
   }
 
   Future<int> createTask(Task task) async {

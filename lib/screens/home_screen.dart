@@ -68,12 +68,21 @@ class HomeScreenState extends State<HomeScreen> with WindowListener {
     );
     _refreshTasks();
     _loadTrackingState();
+    _loadFilterState();
     searchController.addListener(() {
       setState(() {
         _searchQuery = searchController.text.trim().toLowerCase();
       });
     });
     _registerGlobalHotkeys();
+  }
+
+  Future<void> _loadFilterState() async {
+    final tags = await TaskService.instance.getSelectedTags();
+    setState(() {
+      _selectedTags.clear();
+      _selectedTags.addAll(tags);
+    });
   }
 
   Future<void> _registerGlobalHotkeys() async {
@@ -1023,6 +1032,7 @@ class HomeScreenState extends State<HomeScreen> with WindowListener {
                                           } else {
                                             _selectedTags.add(tag);
                                           }
+                                          TaskService.instance.saveSelectedTags(_selectedTags);
                                         }),
                                       );
                                     }, childCount: todayTasks.length),
@@ -1081,6 +1091,7 @@ class HomeScreenState extends State<HomeScreen> with WindowListener {
                                           } else {
                                             _selectedTags.add(tag);
                                           }
+                                          TaskService.instance.saveSelectedTags(_selectedTags);
                                         }),
                                       );
                                     }, childCount: libraryTasks.length),
@@ -1115,7 +1126,10 @@ class HomeScreenState extends State<HomeScreen> with WindowListener {
           _buildTagChip(
             'All',
             _selectedTags.isEmpty,
-            () => setState(() => _selectedTags.clear()),
+            () => setState(() {
+              _selectedTags.clear();
+              TaskService.instance.saveSelectedTags(_selectedTags);
+            }),
             onSurface,
           ),
           const SizedBox(width: 8),
@@ -1131,6 +1145,7 @@ class HomeScreenState extends State<HomeScreen> with WindowListener {
                   } else {
                     _selectedTags.add(tag);
                   }
+                  TaskService.instance.saveSelectedTags(_selectedTags);
                 }),
                 onSurface,
               ),
