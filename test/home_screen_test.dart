@@ -10,23 +10,25 @@ class MockTaskService extends Mock implements TaskService {}
 
 void main() {
   late MockTaskService mockTaskService;
+  List<MethodCall> hotkeyCalls = [];
 
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
     const MethodChannel('window_manager').setMockMethodCallHandler((MethodCall methodCall) async {
       return null;
     });
-    const MethodChannel('hotkey_manager').setMockMethodCallHandler((MethodCall methodCall) async {
-      return null;
-    });
-    
-    registerFallbackValue(Task(title: ''));
-    registerFallbackValue(TimeBlock(startTime: DateTime.now(), endTime: DateTime.now()));
   });
 
   setUp(() {
     mockTaskService = MockTaskService();
     TaskService.instance = mockTaskService;
+    hotkeyCalls.clear();
+
+    // Re-setup hotkey mock for each test to ensure it captures calls
+    const MethodChannel('dev.leanflutter.plugins/hotkey_manager').setMockMethodCallHandler((MethodCall methodCall) async {
+      hotkeyCalls.add(methodCall);
+      return null;
+    });
 
     when(() => mockTaskService.getTasks()).thenAnswer((_) async => []);
     when(() => mockTaskService.getTrackingState()).thenAnswer((_) async => null);
@@ -34,12 +36,12 @@ void main() {
     when(() => mockTaskService.getWindowSize()).thenAnswer((_) async => null);
     when(() => mockTaskService.getSelectedTags()).thenAnswer((_) async => <String>{});
     when(() => mockTaskService.saveSelectedTags(any())).thenAnswer((_) async => {});
+    when(() => mockTaskService.getSetting(any())).thenAnswer((_) async => null);
   });
 
   testWidgets('HomeScreen basic coverage test', (WidgetTester tester) async {
     await tester.binding.setSurfaceSize(const Size(1200, 1200));
     
-    // Provide some tasks to ensure the Library section is rendered and contains interactive elements
     final tasks = [
       Task(id: 1, title: 'Alpha'),
       Task(id: 2, title: 'Beta'),
@@ -66,25 +68,19 @@ void main() {
     await tester.pumpWidget(const TickTockApp());
     await tester.pumpAndSettle();
 
-    // Verify both tasks are visible
     expect(find.text('WorkTask'), findsWidgets);
     expect(find.text('HomeTask'), findsWidgets);
 
-    // Find and tap the #work tag chip in the filter bar
     final workChip = find.text('#work');
-    expect(workChip, findsWidgets); // One in filter bar, one in TaskTile
-    await tester.tap(workChip.first); // Tap the one in filter bar
-    await tester.pumpAndSettle();
-
-    // Verify only WorkTask is visible
-    expect(find.text('WorkTask'), findsWidgets);
-    expect(find.text('HomeTask'), findsNothing);
-
-    // Tap #work again to clear filter
     await tester.tap(workChip.first);
     await tester.pumpAndSettle();
 
-    // Verify both are visible again
+    expect(find.text('WorkTask'), findsWidgets);
+    expect(find.text('HomeTask'), findsNothing);
+
+    await tester.tap(workChip.first);
+    await tester.pumpAndSettle();
+
     expect(find.text('WorkTask'), findsWidgets);
     expect(find.text('HomeTask'), findsWidgets);
   });
@@ -102,13 +98,33 @@ void main() {
     await tester.pumpWidget(const TickTockApp());
     await tester.pumpAndSettle();
 
-    // Trigger Cmd+S
     await tester.sendKeyDownEvent(LogicalKeyboardKey.meta);
     await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
     await tester.sendKeyUpEvent(LogicalKeyboardKey.meta);
     await tester.pumpAndSettle();
 
-    // Verify tracking started for 'LastTask'
     verify(() => mockTaskService.saveTrackingState('LastTask', any())).called(1);
+  });
+
+  testWidgets('HomeScreen registers global hotkey on init', (WidgetTester tester) async {
+    await tester.runAsync(() async {
+      await tester.pumpWidget(const TickTockApp());
+      await tester.pumpAndSettle();
+      
+      // Allow async registration to complete
+      await Future.delayed(const Duration(milliseconds: 500));
+    });
+
+    final methodsCalled = hotkeyCalls.map((c) => c.method).toList();
+    expect(methodsCalled, contains('unregisterAll'));
+    expect(methodsCalled, contains('register'));
+    
+    final regCall = hotkeyCalls.firstWhere((call) => call.method == 'register');
+    final hotkeyMap = regCall.arguments as Map;
+    
+    expect(hotkeyMap.containsKey('keyCode'), isTrue);
+    expect(hotkeyMap['keyCode'], isNotNull);
+    final modifiers = hotkeyMap['modifiers'] as List?;
+    expect(modifiers, contains('alt'));
   });
 }

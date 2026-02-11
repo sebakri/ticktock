@@ -89,24 +89,31 @@ class HomeScreenState extends State<HomeScreen> with WindowListener {
   }
 
   Future<void> _registerGlobalHotkeys() async {
-    // Option + Space: Toggle Visibility
-    HotKey toggleVisibleHotKey = HotKey(
-      key: LogicalKeyboardKey.space,
-      modifiers: [HotKeyModifier.alt],
-      scope: HotKeyScope.system,
-    );
-    await hotKeyManager.register(
-      toggleVisibleHotKey,
-      keyDownHandler: (hotKey) async {
-        bool isFocused = await windowManager.isFocused();
-        if (isFocused) {
-          await windowManager.hide();
-        } else {
-          await windowManager.show();
-          await windowManager.focus();
-        }
-      },
-    );
+    try {
+      // Clear any existing hotkeys to prevent duplicates or conflicts
+      await hotKeyManager.unregisterAll();
+
+      // Option + Space: Toggle Visibility
+      HotKey toggleVisibleHotKey = HotKey(
+        key: LogicalKeyboardKey.space,
+        modifiers: [HotKeyModifier.alt],
+        scope: HotKeyScope.system,
+      );
+      await hotKeyManager.register(
+        toggleVisibleHotKey,
+        keyDownHandler: (hotKey) async {
+          bool isFocused = await windowManager.isFocused();
+          if (isFocused) {
+            await windowManager.hide();
+          } else {
+            await windowManager.show();
+            await windowManager.focus();
+          }
+        },
+      );
+    } catch (e) {
+      debugPrint('Error registering global hotkeys: $e');
+    }
   }
 
   Future<void> _loadTrackingState() async {
