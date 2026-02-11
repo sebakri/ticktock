@@ -16,57 +16,20 @@ import '../widgets/home/task_tile.dart';
 import '../widgets/shortcut_badge.dart';
 import '../services/task_service.dart';
 import '../app.dart';
-
-class AddTaskIntent extends Intent {
-  const AddTaskIntent();
-}
-
-class FocusSearchIntent extends Intent {
-  const FocusSearchIntent();
-}
-
-class ToggleTrackingIntent extends Intent {
-  const ToggleTrackingIntent();
-}
-
-class ClearSearchIntent extends Intent {
-  const ClearSearchIntent();
-}
-
-class ShowHelpIntent extends Intent {
-  const ShowHelpIntent();
-}
-
-class JumpToDateIntent extends Intent {
-  const JumpToDateIntent();
-}
-
-class GoToTodayIntent extends Intent {
-  const GoToTodayIntent();
-}
-
-class TrackActivityTaskIntent extends Intent {
-  final int index;
-  const TrackActivityTaskIntent(this.index);
-}
-
-class EditLibraryTaskIntent extends Intent {
-  final String char;
-  const EditLibraryTaskIntent(this.char);
-}
+import '../intents.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<HomeScreen> createState() => HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with WindowListener {
-  final TextEditingController _taskController = TextEditingController();
-  final TextEditingController _searchController = TextEditingController();
-  final FocusNode _searchFocusNode = FocusNode();
-  final FocusNode _mainFocusNode = FocusNode();
+class HomeScreenState extends State<HomeScreen> with WindowListener {
+  final TextEditingController taskController = TextEditingController();
+  final TextEditingController searchController = TextEditingController();
+  final FocusNode searchFocusNode = FocusNode();
+  final FocusNode mainFocusNode = FocusNode();
   bool _isTracking = false;
   DateTime? _trackingStartTime;
   Timer? _ticker;
@@ -105,9 +68,9 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
     );
     _refreshTasks();
     _loadTrackingState();
-    _searchController.addListener(() {
+    searchController.addListener(() {
       setState(() {
-        _searchQuery = _searchController.text.trim().toLowerCase();
+        _searchQuery = searchController.text.trim().toLowerCase();
       });
     });
     _registerGlobalHotkeys();
@@ -138,7 +101,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
     final state = await TaskService.instance.getTrackingState();
     if (state != null) {
       setState(() {
-        _taskController.text = state['title'];
+        taskController.text = state['title'];
         _trackingStartTime = DateTime.parse(state['start_time']);
         _isTracking = true;
         _ticker = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -154,10 +117,10 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
     windowManager.removeListener(this);
     hotKeyManager.unregisterAll();
     _ticker?.cancel();
-    _taskController.dispose();
-    _searchController.dispose();
-    _searchFocusNode.dispose();
-    _mainFocusNode.dispose();
+    taskController.dispose();
+    searchController.dispose();
+    searchFocusNode.dispose();
+    mainFocusNode.dispose();
     super.dispose();
   }
 
@@ -169,8 +132,8 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
   @override
   void onWindowFocus() {
     final isCurrentRoute = ModalRoute.of(context)?.isCurrent ?? true;
-    if (isCurrentRoute && !_searchFocusNode.hasFocus) {
-      _mainFocusNode.requestFocus();
+    if (isCurrentRoute && !searchFocusNode.hasFocus) {
+      mainFocusNode.requestFocus();
     }
   }
 
@@ -196,7 +159,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
     });
   }
 
-  void _showHelpDialog() {
+  void showHelpDialog() {
     final theme = Theme.of(context);
     final onSurface = theme.colorScheme.onSurface;
 
@@ -351,7 +314,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
     );
   }
 
-  void _addNewTask() {
+  void addNewTask() {
     final existingTitles = _tasks.map((t) => t.title.toLowerCase()).toList();
 
     showDialog(
@@ -371,14 +334,14 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
     );
   }
 
-  void _goToToday() {
+  void goToToday() {
     setState(() {
       final now = DateTime.now();
       _selectedDate = DateTime(now.year, now.month, now.day);
     });
   }
 
-  Future<void> _jumpToDate() async {
+  Future<void> jumpToDate() async {
     final dates = await TaskService.instance.getSessionDates();
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -411,7 +374,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
     }
   }
 
-  Future<void> _editActiveSession() async {
+  Future<void> editActiveSession() async {
     if (!_isTracking || _trackingStartTime == null) return;
 
     final TimeOfDay? pickedTime = await showTimePicker(
@@ -431,22 +394,22 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
 
     if (newStartTime != _trackingStartTime) {
       await TaskService.instance
-          .saveTrackingState(_taskController.text, newStartTime);
+          .saveTrackingState(taskController.text, newStartTime);
       setState(() {
         _trackingStartTime = newStartTime;
       });
     }
   }
 
-  void _onStartTracking(String title) async {
-    if (_isTracking && _taskController.text.trim() == title) {
+  void onStartTracking(String title) async {
+    if (_isTracking && taskController.text.trim() == title) {
       await _stopTracking();
     } else {
       await _startTracking(title);
     }
   }
 
-  void _handleToggleTracking() async {
+  void handleToggleTracking() async {
     if (_isTracking) {
       await _stopTracking();
     } else {
@@ -478,7 +441,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
     final startTime = DateTime.now();
     await TaskService.instance.saveTrackingState(title, startTime);
 
-    _taskController.text = title;
+    taskController.text = title;
     setState(() {
       _isTracking = true;
       _trackingStartTime = startTime;
@@ -497,7 +460,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
   }
 
   Future<void> _stopTracking() async {
-    final title = _taskController.text.trim();
+    final title = taskController.text.trim();
     if (title.isEmpty || !_isTracking) return;
 
     final endTime = DateTime.now();
@@ -518,14 +481,14 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
     setState(() {
       _isTracking = false;
       _trackingStartTime = null;
-      _taskController.clear();
+      taskController.clear();
       _ticker?.cancel();
       _ticker = null;
     });
     _refreshTasks();
   }
 
-  void _editTask(Task task) {
+  void editTask(Task task) {
     showDialog(
       context: context,
       builder: (context) => EditTaskDialog(
@@ -539,18 +502,18 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
           _refreshTasks();
         },
         onDelete: () {
-          _deleteTask(task);
+          deleteTask(task);
           Navigator.pop(context);
         },
         onStart: () {
-          _onStartTracking(task.title);
+          onStartTracking(task.title);
           Navigator.pop(context);
         },
       ),
     );
   }
 
-  void _editTimeBlock(Task task, TimeBlock block) {
+  void editTimeBlock(Task task, TimeBlock block) {
     showDialog(
       context: context,
       builder: (context) => EditSessionDialog(
@@ -571,7 +534,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
     );
   }
 
-  void _deleteTimeBlock(Task task, TimeBlock block) async {
+  void deleteTimeBlock(Task task, TimeBlock block) async {
     if (block.id != null) {
       await TaskService.instance.deleteTimeBlock(block.id!);
       if (task.blocks.length == 1) {
@@ -581,14 +544,14 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
     }
   }
 
-  void _deleteTask(Task task) async {
+  void deleteTask(Task task) async {
     if (task.id != null) {
       await TaskService.instance.deleteTask(task.id!);
       _refreshTasks();
     }
   }
 
-  void _moveTimeBlockToTask(TimeBlock block, Task targetTask) async {
+  void moveTimeBlockToTask(TimeBlock block, Task targetTask) async {
     if (block.taskId == targetTask.id) return;
 
     block.taskId = targetTask.id;
@@ -607,6 +570,89 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
       );
     }
   }
+
+  void clearSearch() {
+    searchController.clear();
+    mainFocusNode.requestFocus();
+  }
+
+  void trackActivityTask(int index) {
+    final today = _getTodayTasks(_getFilteredTasks());
+    if (index < today.length) {
+      onStartTracking(today[index].title);
+    }
+  }
+
+  void editLibraryTask(String char) {
+    final filtered = _getFilteredTasks();
+    final index = libraryKeys.indexWhere((k) => k.keyLabel == char);
+    if (index != -1 && index < filtered.length) {
+      editTask(filtered[index]);
+    }
+  }
+
+  List<Task> _getFilteredTasks() {
+    return _tasks.where((task) {
+      if (_selectedTags.isNotEmpty) {
+        if (!_selectedTags.every((tag) => task.tags.contains(tag))) {
+          return false;
+        }
+      }
+      if (_searchQuery.isEmpty) return true;
+      final title = task.title.toLowerCase();
+      final desc = task.description.toLowerCase();
+      if (title.contains(_searchQuery) || desc.contains(_searchQuery)) {
+        return true;
+      }
+      int charIndex = 0;
+      for (int i = 0; i < title.length && charIndex < _searchQuery.length; i++) {
+        if (title[i] == _searchQuery[charIndex]) charIndex++;
+      }
+      return charIndex == _searchQuery.length;
+    }).toList();
+  }
+
+  List<Task> _getTodayTasks(List<Task> filtered) {
+    return filtered.where((task) {
+      final hasToday = task.blocks.any(
+        (b) =>
+            b.startTime.year == _selectedDate.year &&
+            b.startTime.month == _selectedDate.month &&
+            b.startTime.day == _selectedDate.day,
+      );
+      final isTrackingThisTask =
+          _isTracking && taskController.text.trim() == task.title;
+      final isTodaySelected =
+          DateTime.now().year == _selectedDate.year &&
+          DateTime.now().month == _selectedDate.month &&
+          DateTime.now().day == _selectedDate.day;
+      return hasToday || (isTrackingThisTask && isTodaySelected);
+    }).toList();
+  }
+
+  static const libraryKeys = [
+    LogicalKeyboardKey.keyA,
+    LogicalKeyboardKey.keyB,
+    LogicalKeyboardKey.keyC,
+    LogicalKeyboardKey.keyE,
+    LogicalKeyboardKey.keyG,
+    LogicalKeyboardKey.keyH,
+    LogicalKeyboardKey.keyI,
+    LogicalKeyboardKey.keyJ,
+    LogicalKeyboardKey.keyK,
+    LogicalKeyboardKey.keyL,
+    LogicalKeyboardKey.keyM,
+    LogicalKeyboardKey.keyO,
+    LogicalKeyboardKey.keyP,
+    LogicalKeyboardKey.keyQ,
+    LogicalKeyboardKey.keyR,
+    LogicalKeyboardKey.keyU,
+    LogicalKeyboardKey.keyV,
+    LogicalKeyboardKey.keyW,
+    LogicalKeyboardKey.keyX,
+    LogicalKeyboardKey.keyY,
+    LogicalKeyboardKey.keyZ,
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -644,7 +690,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
             b.startTime.day == _selectedDate.day,
       );
       final isTrackingThisTask =
-          _isTracking && _taskController.text.trim() == task.title;
+          _isTracking && taskController.text.trim() == task.title;
       final isTodaySelected =
           DateTime.now().year == _selectedDate.year &&
           DateTime.now().month == _selectedDate.month &&
@@ -723,30 +769,30 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
       child: Actions(
         actions: {
           AddTaskIntent: CallbackAction<AddTaskIntent>(
-            onInvoke: (intent) => _addNewTask(),
+            onInvoke: (intent) => addNewTask(),
           ),
           FocusSearchIntent: CallbackAction<FocusSearchIntent>(
-            onInvoke: (intent) => _searchFocusNode.requestFocus(),
+            onInvoke: (intent) => searchFocusNode.requestFocus(),
           ),
           ShowHelpIntent: CallbackAction<ShowHelpIntent>(
-            onInvoke: (intent) => _showHelpDialog(),
+            onInvoke: (intent) => showHelpDialog(),
           ),
           GoToTodayIntent: CallbackAction<GoToTodayIntent>(
             onInvoke: (intent) {
-              _goToToday();
+              goToToday();
               return null;
             },
           ),
           JumpToDateIntent: CallbackAction<JumpToDateIntent>(
             onInvoke: (intent) {
-              _jumpToDate();
+              jumpToDate();
               return null;
             },
           ),
           TrackActivityTaskIntent: CallbackAction<TrackActivityTaskIntent>(
             onInvoke: (intent) {
               if (intent.index < todayTasks.length) {
-                _onStartTracking(todayTasks[intent.index].title);
+                onStartTracking(todayTasks[intent.index].title);
               }
               return null;
             },
@@ -757,27 +803,27 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                 (k) => k.keyLabel == intent.char,
               );
               if (index != -1 && index < libraryTasks.length) {
-                _editTask(libraryTasks[index]);
+                editTask(libraryTasks[index]);
               }
               return null;
             },
           ),
           ToggleTrackingIntent: CallbackAction<ToggleTrackingIntent>(
             onInvoke: (intent) {
-              _handleToggleTracking();
+              handleToggleTracking();
               return null;
             },
           ),
           ClearSearchIntent: CallbackAction<ClearSearchIntent>(
             onInvoke: (intent) {
-              _searchController.clear();
-              _mainFocusNode.requestFocus();
+              searchController.clear();
+              mainFocusNode.requestFocus();
               return null;
             },
           ),
         },
         child: Focus(
-          focusNode: _mainFocusNode,
+          focusNode: mainFocusNode,
           autofocus: true,
           child: Scaffold(
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -835,7 +881,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                                 },
                               ),
                               IconButton(
-                                onPressed: _showHelpDialog,
+                                onPressed: showHelpDialog,
                                 icon: Icon(
                                   Icons.help_outline,
                                   color: Theme.of(
@@ -857,8 +903,8 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                       ? const Center(child: CircularProgressIndicator())
                       : GestureDetector(
                           onTap: () {
-                            if (!_searchFocusNode.hasFocus) {
-                              _mainFocusNode.requestFocus();
+                            if (!searchFocusNode.hasFocus) {
+                              mainFocusNode.requestFocus();
                             }
                           },
                           behavior: HitTestBehavior.translucent,
@@ -892,8 +938,8 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                                             );
                                           });
                                         },
-                                        onToday: _goToToday,
-                                        onJumpToDate: _jumpToDate,
+                                        onToday: goToToday,
+                                        onJumpToDate: jumpToDate,
                                       ),
                                       const SizedBox(height: 24),
                                       DayTimeline(
@@ -901,7 +947,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                                         tasks: todayTasks,
                                         isTracking: _isTracking,
                                         trackingStartTime: _trackingStartTime,
-                                        trackingTaskTitle: _taskController.text
+                                        trackingTaskTitle: taskController.text
                                             .trim(),
                                         taskColors: _taskColors,
                                       ),
@@ -921,7 +967,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                                       final taskColor = _taskColors[task.id] ?? Colors.grey;
                                       final isTrackingThisTask =
                                           _isTracking &&
-                                          _taskController.text.trim() ==
+                                          taskController.text.trim() ==
                                               task.title;
                                       final activeDuration =
                                           isTrackingThisTask &&
@@ -964,13 +1010,13 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                                           }
                                         }),
                                                                               onStartTracking: () =>
-                                                                                  _onStartTracking(task.title),
-                                                                              onEditActiveSession: _editActiveSession,
+                                                                                  onStartTracking(task.title),
+                                                                              onEditActiveSession: editActiveSession,
                                                                               onEditBlock: (block) =>
-                                                                                  _editTimeBlock(task, block),                                        onDeleteBlock: (block) =>
-                                            _deleteTimeBlock(task, block),
+                                                                                  editTimeBlock(task, block),                                        onDeleteBlock: (block) =>
+                                            deleteTimeBlock(task, block),
                                         onAcceptTimeBlock: (block) =>
-                                            _moveTimeBlockToTask(block, task),
+                                            moveTimeBlockToTask(block, task),
                                         onTagTap: (tag) => setState(() {
                                           if (_selectedTags.contains(tag)) {
                                             _selectedTags.remove(tag);
@@ -1013,7 +1059,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                                       final taskColor = _taskColors[task.id] ?? Colors.grey;
                                       final isTrackingThisTask =
                                           _isTracking &&
-                                          _taskController.text.trim() ==
+                                          taskController.text.trim() ==
                                               task.title;
 
                                       final shortcutLabel =
@@ -1026,9 +1072,9 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                                         isTracking: isTrackingThisTask,
                                         shortcutLabel: shortcutLabel,
                                         color: taskColor,
-                                        onTap: () => _editTask(task),
+                                        onTap: () => editTask(task),
                                         onAcceptTimeBlock: (block) =>
-                                            _moveTimeBlockToTask(block, task),
+                                            moveTimeBlockToTask(block, task),
                                         onTagTap: (tag) => setState(() {
                                           if (_selectedTags.contains(tag)) {
                                             _selectedTags.remove(tag);
@@ -1172,7 +1218,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
     return Row(
       children: [
         ElevatedButton(
-          onPressed: _addNewTask,
+          onPressed: addNewTask,
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF4F46E5).withOpacity(0.1),
             foregroundColor: const Color(0xFF4F46E5),
@@ -1206,8 +1252,8 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
               borderRadius: BorderRadius.circular(12),
             ),
             child: TextField(
-              controller: _searchController,
-              focusNode: _searchFocusNode,
+              controller: searchController,
+              focusNode: searchFocusNode,
               style: TextStyle(fontSize: 14, color: onSurface),
               textAlignVertical: TextAlignVertical.center,
               decoration: InputDecoration(
@@ -1227,7 +1273,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                           size: 18,
                           color: onSurface.withOpacity(0.7),
                         ),
-                        onPressed: () => _searchController.clear(),
+                        onPressed: () => searchController.clear(),
                       )
                     : Padding(
                         padding: const EdgeInsets.only(right: 12),

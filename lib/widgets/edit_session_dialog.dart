@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../models/time_block.dart';
 import 'shortcut_badge.dart';
+import 'time_picker_dialog.dart' as custom;
 
 class EditSessionDialog extends StatefulWidget {
   final TimeBlock block;
@@ -66,9 +67,12 @@ class _EditSessionDialogState extends State<EditSessionDialog> {
 
   Future<void> _pickTime(bool isStart) async {
     final initialTime = TimeOfDay.fromDateTime(isStart ? _startTime : _endTime);
-    final picked = await showTimePicker(
+    final picked = await showDialog<TimeOfDay>(
       context: context,
-      initialTime: initialTime,
+      builder: (context) => custom.TimePickerDialog(
+        initialTime: initialTime,
+        title: isStart ? 'Start Time' : 'End Time',
+      ),
     );
     if (picked != null) {
       setState(() {
@@ -93,7 +97,8 @@ class _EditSessionDialogState extends State<EditSessionDialog> {
           );
           if (newEndTime.isBefore(_startTime)) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('End time cannot be before start time')),
+              const SnackBar(
+                  content: Text('End time cannot be before start time')),
             );
             return;
           }
