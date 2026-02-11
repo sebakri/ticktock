@@ -14,9 +14,9 @@ class TrayService with TrayListener {
 
   Future<void> _setupTray() async {
     // macOS tray icon (using the one from assets)
-    String iconPath = Platform.isWindows ? 'assets/app_icon.ico' : 'assets/tray_icon.png';
+    String iconPath = Platform.isWindows ? 'assets/app_icon.ico' : 'assets/tray_icon_Template.png';
     
-    await trayManager.setIcon(iconPath);
+    await trayManager.setIcon(iconPath, isTemplate: true);
     
     List<MenuItem> items = [
       MenuItem(
