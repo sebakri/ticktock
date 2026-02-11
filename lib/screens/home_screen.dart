@@ -15,6 +15,7 @@ import '../widgets/home/activity_log_item.dart';
 import '../widgets/home/task_tile.dart';
 import '../widgets/shortcut_badge.dart';
 import '../services/task_service.dart';
+import '../services/tray_service.dart';
 import '../app.dart';
 import '../intents.dart';
 import '../globals.dart';
@@ -118,6 +119,7 @@ class HomeScreenState extends State<HomeScreen> with WindowListener {
         _ticker = Timer.periodic(const Duration(seconds: 1), (timer) {
           setState(() {});
         });
+        TrayService.instance.updateTrayText(state['title']);
       });
       _refreshTasks();
     }
@@ -463,6 +465,7 @@ class HomeScreenState extends State<HomeScreen> with WindowListener {
 
     final startTime = DateTime.now();
     await TaskService.instance.saveTrackingState(title, startTime);
+    await TrayService.instance.updateTrayText(title);
 
     taskController.text = title;
     setState(() {
@@ -500,6 +503,7 @@ class HomeScreenState extends State<HomeScreen> with WindowListener {
     }
 
     await TaskService.instance.clearTrackingState();
+    await TrayService.instance.updateTrayText();
 
     setState(() {
       _isTracking = false;
