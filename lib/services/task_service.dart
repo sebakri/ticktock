@@ -26,7 +26,7 @@ class TaskService {
 
     return await openDatabase(
       path,
-      version: 6,
+      version: 7,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -82,6 +82,14 @@ class TaskService {
         )
       ''');
     }
+    if (oldVersion < 7) {
+      await db.execute('''
+        CREATE TABLE settings (
+          key TEXT PRIMARY KEY,
+          value TEXT
+        )
+      ''');
+    }
   }
 
   Future _createDB(Database db, int version) async {
@@ -128,6 +136,35 @@ class TaskService {
         selected_tags TEXT
       )
     ''');
+
+    await db.execute('''
+      CREATE TABLE settings (
+        key TEXT PRIMARY KEY,
+        value TEXT
+      )
+    ''');
+  }
+
+  Future<void> saveSetting(String key, String value) async {
+    final db = await instance.database;
+    await db.insert(
+      'settings',
+      {'key': key, 'value': value},
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<String?> getSetting(String key) async {
+    final db = await instance.database;
+    final maps = await db.query(
+      'settings',
+      where: 'key = ?',
+      whereArgs: [key],
+    );
+    if (maps.isNotEmpty) {
+      return maps.first['value'] as String?;
+    }
+    return null;
   }
 
   Future<void> saveWindowSize(double width, double height) async {
