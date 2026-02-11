@@ -74,7 +74,7 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
   List<Task> _tasks = [];
   bool _isLoading = true;
   String _searchQuery = '';
-  String? _selectedTag;
+  final Set<String> _selectedTags = {};
   final Set<int> _expandedActivityIds = {};
   final Map<int, Color> _taskColors = {};
 
@@ -611,9 +611,11 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
   @override
   Widget build(BuildContext context) {
     final filteredTasks = _tasks.where((task) {
-      // 1. Tag Filter
-      if (_selectedTag != null && !task.tags.contains(_selectedTag)) {
-        return false;
+      // 1. Tag Filter - Task must have ALL selected tags
+      if (_selectedTags.isNotEmpty) {
+        if (!_selectedTags.every((tag) => task.tags.contains(tag))) {
+          return false;
+        }
       }
 
       // 2. Search Filter
@@ -970,9 +972,11 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                                         onAcceptTimeBlock: (block) =>
                                             _moveTimeBlockToTask(block, task),
                                         onTagTap: (tag) => setState(() {
-                                          _selectedTag = (_selectedTag == tag)
-                                              ? null
-                                              : tag;
+                                          if (_selectedTags.contains(tag)) {
+                                            _selectedTags.remove(tag);
+                                          } else {
+                                            _selectedTags.add(tag);
+                                          }
                                         }),
                                       );
                                     }, childCount: todayTasks.length),
@@ -1026,9 +1030,11 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
                                         onAcceptTimeBlock: (block) =>
                                             _moveTimeBlockToTask(block, task),
                                         onTagTap: (tag) => setState(() {
-                                          _selectedTag = (_selectedTag == tag)
-                                              ? null
-                                              : tag;
+                                          if (_selectedTags.contains(tag)) {
+                                            _selectedTags.remove(tag);
+                                          } else {
+                                            _selectedTags.add(tag);
+                                          }
                                         }),
                                       );
                                     }, childCount: libraryTasks.length),
@@ -1062,8 +1068,8 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
         children: [
           _buildTagChip(
             'All',
-            _selectedTag == null,
-            () => setState(() => _selectedTag = null),
+            _selectedTags.isEmpty,
+            () => setState(() => _selectedTags.clear()),
             onSurface,
           ),
           const SizedBox(width: 8),
@@ -1072,9 +1078,13 @@ class _HomeScreenState extends State<HomeScreen> with WindowListener {
               padding: const EdgeInsets.only(right: 8),
               child: _buildTagChip(
                 '#$tag',
-                _selectedTag == tag,
+                _selectedTags.contains(tag),
                 () => setState(() {
-                  _selectedTag = (_selectedTag == tag) ? null : tag;
+                  if (_selectedTags.contains(tag)) {
+                    _selectedTags.remove(tag);
+                  } else {
+                    _selectedTags.add(tag);
+                  }
                 }),
                 onSurface,
               ),
