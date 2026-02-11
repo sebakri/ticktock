@@ -53,8 +53,8 @@ class TrayService with TrayListener {
   }
 
   Future<void> _toggleWindow() async {
-    bool isVisible = await windowManager.isVisible();
-    if (isVisible) {
+    bool isFocused = await windowManager.isFocused();
+    if (isFocused) {
       await windowManager.hide();
     } else {
       await windowManager.show();

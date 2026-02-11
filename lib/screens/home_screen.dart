@@ -95,8 +95,8 @@ class HomeScreenState extends State<HomeScreen> with WindowListener {
     await hotKeyManager.register(
       toggleVisibleHotKey,
       keyDownHandler: (hotKey) async {
-        bool isVisible = await windowManager.isVisible();
-        if (isVisible) {
+        bool isFocused = await windowManager.isFocused();
+        if (isFocused) {
           await windowManager.hide();
         } else {
           await windowManager.show();
