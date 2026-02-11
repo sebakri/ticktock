@@ -2,27 +2,26 @@
 
 **Modern Time Tracking for macOS.**
 
-TickTock ist eine minimalistische, hocheffiziente Zeiterfassungs-App, die nahtlos in macOS integriert ist. Entwickelt für Developer und Kreative, die ihre Produktivität ohne Reibungsverluste steigern wollen.
+TickTock is a minimalist, high-efficiency time tracking app seamlessly integrated into macOS. Designed for developers and creatives who want to boost their productivity without friction.
 
 <div class="grid cards" markdown>
 
--   :material-dock-top:{ .lg .middle } __Menüleisten-Fokus__
+-   :material-dock-top:{ .lg .middle } __Menu Bar Focus__
 
-    Behalte deine Zeit direkt in der macOS Top-Bar im Blick – dezent und immer präsent.
+    Keep track of your time directly in the macOS menu bar – subtle and always present.
 
 -   :material-keyboard-variant:{ .lg .middle } __Keyboard First__
 
-    Steuere fast alles über intuitive Shortcuts. `⌥ + Space` zum schnellen Umschalten.
+    Control almost everything via intuitive shortcuts. Use `⌥ + Space` for quick toggling.
 
 -   :material-database:{ .lg .middle } __Privacy First__
 
-    Deine Daten gehören dir. Lokale SQLite-Speicherung ohne Cloud-Zwang oder Tracking.
+    Your data belongs to you. Local SQLite storage with no cloud requirements or tracking.
 
--   :material-palette:{ .lg .middle } __Modernes Design__
+-   :material-palette:{ .lg .middle } __Modern Design__
 
-    Ein Interface, das sich wie ein nativer Teil von macOS anfühlt – inkl. vollem Dark Mode Support.
+    An interface that feels like a native part of macOS – including full Dark Mode support.
 
 </div>
 
-[Installation starten](installation.md){ .md-button .md-button--primary }
-
+[Start Installation](installation.md){ .md-button .md-button--primary }
