@@ -31,6 +31,7 @@ class HomeScreenState extends State<HomeScreen> with WindowListener {
   final FocusNode searchFocusNode = FocusNode();
   final FocusNode mainFocusNode = FocusNode();
   bool _isTracking = false;
+  bool _isWindowFocused = true;
   DateTime? _trackingStartTime;
   Timer? _ticker;
   DateTime _selectedDate = DateTime.now();
@@ -140,10 +141,20 @@ class HomeScreenState extends State<HomeScreen> with WindowListener {
 
   @override
   void onWindowFocus() {
+    setState(() {
+      _isWindowFocused = true;
+    });
     final isCurrentRoute = ModalRoute.of(context)?.isCurrent ?? true;
     if (isCurrentRoute && !searchFocusNode.hasFocus) {
       mainFocusNode.requestFocus();
     }
+  }
+
+  @override
+  void onWindowBlur() {
+    setState(() {
+      _isWindowFocused = false;
+    });
   }
 
   @override
@@ -593,10 +604,10 @@ class HomeScreenState extends State<HomeScreen> with WindowListener {
   }
 
   void editLibraryTask(String char) {
-    final filtered = _getFilteredTasks();
+    final libraryTasks = _getFilteredTasks();
     final index = libraryKeys.indexWhere((k) => k.keyLabel == char);
-    if (index != -1 && index < filtered.length) {
-      editTask(filtered[index]);
+    if (index != -1 && index < libraryTasks.length) {
+      editTask(libraryTasks[index]);
     }
   }
 
@@ -665,175 +676,22 @@ class HomeScreenState extends State<HomeScreen> with WindowListener {
 
   @override
   Widget build(BuildContext context) {
-    final filteredTasks = _tasks.where((task) {
-      // 1. Tag Filter - Task must have ALL selected tags
-      if (_selectedTags.isNotEmpty) {
-        if (!_selectedTags.every((tag) => task.tags.contains(tag))) {
-          return false;
-        }
-      }
-
-      // 2. Search Filter
-      if (_searchQuery.isEmpty) return true;
-      final title = task.title.toLowerCase();
-      final desc = task.description.toLowerCase();
-      if (title.contains(_searchQuery) || desc.contains(_searchQuery)) {
-        return true;
-      }
-      int charIndex = 0;
-      for (
-        int i = 0;
-        i < title.length && charIndex < _searchQuery.length;
-        i++
-      ) {
-        if (title[i] == _searchQuery[charIndex]) charIndex++;
-      }
-      return charIndex == _searchQuery.length;
-    }).toList();
-
-    final todayTasks = filteredTasks.where((task) {
-      final hasToday = task.blocks.any(
-        (b) =>
-            b.startTime.year == _selectedDate.year &&
-            b.startTime.month == _selectedDate.month &&
-            b.startTime.day == _selectedDate.day,
-      );
-      final isTrackingThisTask =
-          _isTracking && taskController.text.trim() == task.title;
-      final isTodaySelected =
-          DateTime.now().year == _selectedDate.year &&
-          DateTime.now().month == _selectedDate.month &&
-          DateTime.now().day == _selectedDate.day;
-      return hasToday || (isTrackingThisTask && isTodaySelected);
-    }).toList();
-
+    final filteredTasks = _getFilteredTasks();
+    final todayTasks = _getTodayTasks(filteredTasks);
     final libraryTasks = filteredTasks;
 
-    // pool of keys for library shortcuts (excluding app-wide shortcuts N, F, S, T, D)
-    const libraryKeys = [
-      LogicalKeyboardKey.keyA,
-      LogicalKeyboardKey.keyB,
-      LogicalKeyboardKey.keyC,
-      LogicalKeyboardKey.keyE,
-      LogicalKeyboardKey.keyG,
-      LogicalKeyboardKey.keyH,
-      LogicalKeyboardKey.keyI,
-      LogicalKeyboardKey.keyJ,
-      LogicalKeyboardKey.keyK,
-      LogicalKeyboardKey.keyL,
-      LogicalKeyboardKey.keyM,
-      LogicalKeyboardKey.keyO,
-      LogicalKeyboardKey.keyP,
-      LogicalKeyboardKey.keyQ,
-      LogicalKeyboardKey.keyR,
-      LogicalKeyboardKey.keyU,
-      LogicalKeyboardKey.keyV,
-      LogicalKeyboardKey.keyW,
-      LogicalKeyboardKey.keyX,
-      LogicalKeyboardKey.keyY,
-      LogicalKeyboardKey.keyZ,
-    ];
-
     return Shortcuts(
-      shortcuts: {
-        const SingleActivator(LogicalKeyboardKey.keyN, meta: true):
-            const AddTaskIntent(),
-        const SingleActivator(LogicalKeyboardKey.keyF, meta: true):
-            const FocusSearchIntent(),
-        const SingleActivator(LogicalKeyboardKey.keyS, meta: true):
-            const ToggleTrackingIntent(),
-        const SingleActivator(LogicalKeyboardKey.escape):
-            const ClearSearchIntent(),
-        const SingleActivator(LogicalKeyboardKey.slash, shift: true):
-            const ShowHelpIntent(),
-        const SingleActivator(LogicalKeyboardKey.keyT, meta: true):
-            const GoToTodayIntent(),
-        const SingleActivator(LogicalKeyboardKey.keyD, meta: true):
-            const JumpToDateIntent(),
-        // Cmd + 1-9 for Activity Tasks (Start Tracking)
-        const SingleActivator(LogicalKeyboardKey.digit1, meta: true):
-            const TrackActivityTaskIntent(0),
-        const SingleActivator(LogicalKeyboardKey.digit2, meta: true):
-            const TrackActivityTaskIntent(1),
-        const SingleActivator(LogicalKeyboardKey.digit3, meta: true):
-            const TrackActivityTaskIntent(2),
-        const SingleActivator(LogicalKeyboardKey.digit4, meta: true):
-            const TrackActivityTaskIntent(3),
-        const SingleActivator(LogicalKeyboardKey.digit5, meta: true):
-            const TrackActivityTaskIntent(4),
-        const SingleActivator(LogicalKeyboardKey.digit6, meta: true):
-            const TrackActivityTaskIntent(5),
-        const SingleActivator(LogicalKeyboardKey.digit7, meta: true):
-            const TrackActivityTaskIntent(6),
-        const SingleActivator(LogicalKeyboardKey.digit8, meta: true):
-            const TrackActivityTaskIntent(7),
-        const SingleActivator(LogicalKeyboardKey.digit9, meta: true):
-            const TrackActivityTaskIntent(8),
-        // Cmd + A-Z for Library Tasks (Edit Modal)
+      shortcuts: <ShortcutActivator, Intent>{
+        // Local dynamic shortcuts for library tasks
         for (int i = 0; i < libraryTasks.length && i < libraryKeys.length; i++)
           SingleActivator(libraryKeys[i], meta: true): EditLibraryTaskIntent(
             libraryKeys[i].keyLabel,
           ),
       },
-      child: Actions(
-        actions: {
-          AddTaskIntent: CallbackAction<AddTaskIntent>(
-            onInvoke: (intent) => addNewTask(),
-          ),
-          FocusSearchIntent: CallbackAction<FocusSearchIntent>(
-            onInvoke: (intent) => searchFocusNode.requestFocus(),
-          ),
-          ShowHelpIntent: CallbackAction<ShowHelpIntent>(
-            onInvoke: (intent) => showHelpDialog(),
-          ),
-          GoToTodayIntent: CallbackAction<GoToTodayIntent>(
-            onInvoke: (intent) {
-              goToToday();
-              return null;
-            },
-          ),
-          JumpToDateIntent: CallbackAction<JumpToDateIntent>(
-            onInvoke: (intent) {
-              jumpToDate();
-              return null;
-            },
-          ),
-          TrackActivityTaskIntent: CallbackAction<TrackActivityTaskIntent>(
-            onInvoke: (intent) {
-              if (intent.index < todayTasks.length) {
-                onStartTracking(todayTasks[intent.index].title);
-              }
-              return null;
-            },
-          ),
-          EditLibraryTaskIntent: CallbackAction<EditLibraryTaskIntent>(
-            onInvoke: (intent) {
-              final index = libraryKeys.indexWhere(
-                (k) => k.keyLabel == intent.char,
-              );
-              if (index != -1 && index < libraryTasks.length) {
-                editTask(libraryTasks[index]);
-              }
-              return null;
-            },
-          ),
-          ToggleTrackingIntent: CallbackAction<ToggleTrackingIntent>(
-            onInvoke: (intent) {
-              handleToggleTracking();
-              return null;
-            },
-          ),
-          ClearSearchIntent: CallbackAction<ClearSearchIntent>(
-            onInvoke: (intent) {
-              searchController.clear();
-              mainFocusNode.requestFocus();
-              return null;
-            },
-          ),
-        },
+      child: FocusScope(
+        autofocus: true,
         child: Focus(
           focusNode: mainFocusNode,
-          autofocus: true,
           child: Scaffold(
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             body: Column(
@@ -898,7 +756,7 @@ class HomeScreenState extends State<HomeScreen> with WindowListener {
                                   ).colorScheme.onSurface.withOpacity(0.3),
                                   size: 20,
                                 ),
-                                tooltip: 'Shortcuts (?)',
+                                tooltip: _isWindowFocused ? 'Shortcuts (?)' : 'Help',
                               ),
                             ],
                           ),
@@ -986,7 +844,7 @@ class HomeScreenState extends State<HomeScreen> with WindowListener {
                                             )
                                           : Duration.zero;
 
-                                      final shortcutLabel = index < 9
+                                      final shortcutLabel = (_isWindowFocused && index < 9)
                                           ? '⌘${index + 1}'
                                           : null;
 
@@ -1073,7 +931,7 @@ class HomeScreenState extends State<HomeScreen> with WindowListener {
                                               task.title;
 
                                       final shortcutLabel =
-                                          index < libraryKeys.length
+                                          (_isWindowFocused && index < libraryKeys.length)
                                           ? '⌘${libraryKeys[index].keyLabel}'
                                           : null;
 
@@ -1244,17 +1102,19 @@ class HomeScreenState extends State<HomeScreen> with WindowListener {
             ),
             elevation: 0,
           ),
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.add, size: 18),
-              SizedBox(width: 8),
-              Text(
+              const Icon(Icons.add, size: 18),
+              const SizedBox(width: 8),
+              const Text(
                 'New Task',
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
               ),
-              SizedBox(width: 12),
-              ShortcutBadge(label: '⌘N', isLight: true),
+              if (_isWindowFocused) ...[
+                const SizedBox(width: 12),
+                const ShortcutBadge(label: '⌘N', isLight: true),
+              ],
             ],
           ),
         ),
@@ -1290,13 +1150,17 @@ class HomeScreenState extends State<HomeScreen> with WindowListener {
                         ),
                         onPressed: () => searchController.clear(),
                       )
-                    : Padding(
-                        padding: const EdgeInsets.only(right: 12),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [ShortcutBadge(label: '⌘F', isLight: true)],
-                        ),
-                      ),
+                    : _isWindowFocused
+                        ? Padding(
+                            padding: const EdgeInsets.only(right: 12),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                ShortcutBadge(label: '⌘F', isLight: true)
+                              ],
+                            ),
+                          )
+                        : null,
               ),
             ),
           ),
