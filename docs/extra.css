@@ -46,16 +46,38 @@ h1, h2, h3 {
 .md-header {
   background-color: rgba(255, 255, 255, 0.9) !important;
   backdrop-filter: blur(10px);
+  color: #0F172A !important; /* Fixed text color for light mode */
+}
+
+/* Ensure header links/text are dark in light mode */
+.md-header__topic, .md-header__button, .md-tabs__link {
+  color: #0F172A !important;
 }
 
 [data-md-color-scheme="slate"] .md-header {
   background-color: rgba(15, 23, 42, 0.9) !important;
 }
 
+[data-md-color-scheme="slate"] .md-header__topic, 
+[data-md-color-scheme="slate"] .md-header__button,
+[data-md-color-scheme="slate"] .md-tabs__link {
+  color: #ffffff !important;
+}
+
 .md-header__button.md-logo img {
   border-radius: 8px;
   height: 1.5rem;
   width: auto;
+}
+
+/* Remove left sidebar menu */
+.md-sidebar--primary {
+  display: none;
+}
+
+/* Expand content to fill space */
+.md-content {
+  margin-left: 0 !important;
 }
 
 /* Card refinement */
